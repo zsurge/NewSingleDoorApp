@@ -40,7 +40,7 @@
 #include "LocalData.h"
 #include "deviceInfo.h"
 #include "bsp_time.h"
-#include "eth_cfg.h"
+
 					
 
 
@@ -112,11 +112,11 @@ const CMD_HANDLE_T CmdList[] =
 	{"1006", AbnormalAlarm},
 	{"1012", AddCardNo},
 	{"1053", DelCardNoAll},
-	{"1016", UpgradeDev},
+	{"10006", UpgradeDev},
 	{"1017", UpgradeAck},
 	{"1026", GetDevInfo},  
-	{"1027", DelCardSingle},  
-	{"2007", RemoteResetDev}, 
+	{"10005", DelCardSingle},  
+	{"10010", RemoteResetDev}, 
 	{"30001", SetLocalSn},
     {"3002", GetServerIp},
     {"10001", GetTemplateParam},
@@ -257,39 +257,6 @@ int mqttSendData(uint8_t *payload_out,uint16_t payload_out_len)
 
    return rc;
 }
-
-
-
-//这个是为了方便服务端调试，给写的默认返回的函数
-//static SYSERRORCODE_E ReturnDefault ( uint8_t* msgBuf ) //返回默认消息
-//{
-//        SYSERRORCODE_E result = NO_ERR;
-//        uint8_t buf[MQTT_TEMP_LEN] = {0};
-//        uint16_t len = 0;
-//    
-//        if(!msgBuf)
-//        {
-//            return STR_EMPTY_ERR;
-//        }
-//    
-//        result = modifyJsonItem(packetBaseJson(msgBuf),"status","1",1,buf);      
-//        result = modifyJsonItem(packetBaseJson(buf),"UnknownCommand","random return",1,buf);   
-//    
-//        if(result != NO_ERR)
-//        {
-//            return result;
-//        }
-//    
-//        len = strlen((const char*)buf);
-//    
-//        log_d("OpenDoor len = %d,buf = %s\r\n",len,buf);
-//    
-//        mqttSendData(buf,len);
-//        
-//        return result;
-
-//}
-
 
 SYSERRORCODE_E OpenDoor ( uint8_t* msgBuf )
 {
@@ -503,7 +470,7 @@ SYSERRORCODE_E UpgradeDev ( uint8_t* msgBuf )
     saveUpgradeData(msgBuf);
 
     //1.保存URL
-    strcpy((char *)tmpUrl,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"softwareUrl",1));
+    strcpy((char *)tmpUrl,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"url",1));
     log_d("tmpUrl = %s\r\n",tmpUrl);
     
     ef_set_env("url", (const char*)GetJsonItem((const uint8_t *)tmpUrl,(const uint8_t *)"picUrl",0)); 
@@ -588,14 +555,6 @@ SYSERRORCODE_E EnableDev ( uint8_t* msgBuf )
     strcpy((char *)typeBuf,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"type",1));
     type = atoi(typeBuf);
     
-
-    result = modifyJsonItem(msgBuf,"status","1",1,buf);
-
-    if(result != NO_ERR)
-    {
-        return result;
-    }    
-
     if(type == 1)
     {
         SaveDevState(DEVICE_ENABLE);
@@ -605,18 +564,19 @@ SYSERRORCODE_E EnableDev ( uint8_t* msgBuf )
          SaveDevState(DEVICE_DISABLE);
     }
     
-    //add 2020.04.27    
-    xQueueReset(xCardIDQueue);  
+     //add 2020.04.27    
+     xQueueReset(xCardIDQueue);  
+     
+    strcpy(buf,packetBaseJson(msgBuf,1));
     
-    //这里需要发消息到消息队列，启用
-    SendToQueue(typeBuf,strlen((const char*)typeBuf),AUTH_MODE_BIND);
-
     len = strlen((const char*)buf);
 
     log_d("EnableDev len = %d,buf = %s\r\n",len,buf);
 
     mqttSendData(buf,len);
 
+    //这里需要发消息到消息队列，启用
+    SendToQueue(typeBuf,strlen((const char*)typeBuf),AUTH_MODE_BIND);
     return result;
 
 
@@ -736,18 +696,20 @@ static SYSERRORCODE_E DelCardSingle( uint8_t* msgBuf )
     if(ret != NO_FIND_HEAD)
     {
         //响应服务器
-        result = modifyJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",(const uint8_t *)"1",0,buf);
+//        result = modifyJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",(const uint8_t *)"1",0,buf);
+        strcpy(buf,packetBaseJson(msgBuf,1));
     }
     else
     {
         //包括没有该条记录和其它错误
-        result = modifyJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",(const uint8_t *)"0",0,buf);
+//        result = modifyJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",(const uint8_t *)"0",0,buf);
+        strcpy(buf,packetBaseJson(msgBuf,0));
     }  
 
-    if(result != NO_ERR)
-    {
-        return result;
-    }
+//    if(result != NO_ERR)
+//    {
+//        return result;
+//    }
 
     len = strlen((const char*)buf);
 
@@ -870,17 +832,20 @@ static SYSERRORCODE_E DownLoadCardID ( uint8_t* msgBuf )
         
         if(ret >= 1)
         {
-            result = modifyJsonItem(packetBaseJson(msgBuf,1),"cardNo",tmpAsc,0,buf); 
+//            result = modifyJsonItem(packetBaseJson(msgBuf,1),"cardNo",tmpAsc,0,buf); 
+            strcpy(buf,packetBaseJson(msgBuf,1));
         }
         else
         {
-            result = modifyJsonItem(packetBaseJson(msgBuf,0),"cardNo",tmpAsc,0,buf); 
+//            result = modifyJsonItem(packetBaseJson(msgBuf,0),"cardNo",tmpAsc,0,buf); 
+            
+            strcpy(buf,packetBaseJson(msgBuf,0));
         }
 
-        if(result != NO_ERR)
-        {            
-            return result;
-        }     
+//        if(result != NO_ERR)
+//        {            
+//            return result;
+//        }     
         
         //为了防止漏下，先写入到FLASH中,OK后应答服务器 
         sendLen = mqttSendData(buf,strlen((const char*)buf)); 

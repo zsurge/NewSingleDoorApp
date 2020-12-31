@@ -24,6 +24,7 @@
 #include "elog.h"
 
 #include "jsonUtils.h"
+#include "eth_cfg.h"
 
 
 
@@ -526,7 +527,7 @@ uint8_t* packetBaseJson(uint8_t *jsonBuff,char status)
 {
     static uint8_t value[200] = {0};
     
-	cJSON* root,*newroot,*json_cmdCode,*json_ownerId;
+	cJSON* root,*dataObj,*newroot,*json_cmdCode,*json_ownerId,*json_cardNo,*json_ownerType,*json_residentialId,*json_buildingId,*json_roomId,*json_identification;
     char *tmpBuf;
     
 	root = cJSON_Parse ( ( char* ) jsonBuff );    //解析数据包
@@ -544,11 +545,7 @@ uint8_t* packetBaseJson(uint8_t *jsonBuff,char status)
 	}
 	else
 	{
-        json_cmdCode = cJSON_GetObjectItem ( root, "commandCode" );
-        json_ownerId = cJSON_GetObjectItem ( root, "ownerId" );       
-
-        newroot = cJSON_CreateObject();
-   
+        newroot = cJSON_CreateObject();   
         if(!newroot)
         {
             log_d ( "Error before: [%s]\r\n",cJSON_GetErrorPtr() );
@@ -560,6 +557,18 @@ uint8_t* packetBaseJson(uint8_t *jsonBuff,char status)
     		return NULL;
         }
 
+        dataObj = cJSON_GetObjectItem ( root, "data" );
+        
+        json_cmdCode = cJSON_GetObjectItem ( root, "commandCode" );
+        
+        json_ownerId = cJSON_GetObjectItem ( dataObj, "ownerId" );       
+        json_cardNo = cJSON_GetObjectItem ( dataObj, "cardNo" );
+        json_ownerType = cJSON_GetObjectItem ( dataObj, "ownerType" );
+        json_residentialId = cJSON_GetObjectItem ( dataObj, "residentialId" );     
+        json_buildingId = cJSON_GetObjectItem ( dataObj, "buildingId" );
+        json_roomId = cJSON_GetObjectItem ( dataObj, "roomId" );   
+        json_identification = cJSON_GetObjectItem ( dataObj, "identification" );  
+
         if(json_cmdCode)
             cJSON_AddStringToObject(newroot, "commandCode", json_cmdCode->valuestring);     
             
@@ -568,6 +577,23 @@ uint8_t* packetBaseJson(uint8_t *jsonBuff,char status)
             
         
         cJSON_AddStringToObject(newroot, "deviceCode",gDevBaseParam.deviceCode.deviceSn);
+
+        if(json_cardNo)
+            cJSON_AddStringToObject(newroot, "cardNo", json_cardNo->valuestring);     
+        if(json_identification)
+            cJSON_AddStringToObject(newroot, "identification", json_identification->valuestring);     
+            
+        if(json_ownerType)
+            cJSON_AddNumberToObject(newroot, "ownerType", json_ownerType->valueint);
+        if(json_residentialId)
+            cJSON_AddNumberToObject(newroot, "residentialId", json_residentialId->valueint);     
+            
+        if(json_buildingId)
+            cJSON_AddNumberToObject(newroot, "buildingId", json_buildingId->valueint);
+
+        if(json_roomId)
+            cJSON_AddNumberToObject(newroot, "roomId", json_roomId->valueint); 
+            
         
         if(status == 1)
             cJSON_AddStringToObject(newroot, "status", "1");
@@ -788,7 +814,7 @@ SYSERRORCODE_E packetSingleAddCardJson(uint8_t *jsonBuff,char status,uint8_t *de
 
 void GetCardArray ( const uint8_t* jsonBuff,const uint8_t* item,uint8_t *num,uint8_t descBuff[][8])
 {    
-    cJSON* root,*json_item;
+    cJSON* root,*json_item,*dataObj;
     cJSON* arrayElement;
     int tmpArrayNum = 0;
     int i = 0;
@@ -806,7 +832,10 @@ void GetCardArray ( const uint8_t* jsonBuff,const uint8_t* item,uint8_t *num,uin
     else
     {
         //根据协议，默认所有的子项是data
-        json_item = cJSON_GetObjectItem ( root, "cardNo" );  
+        dataObj = cJSON_GetObjectItem ( root, "data" );       
+        
+        //根据协议，默认所有的子项是data
+        json_item = cJSON_GetObjectItem ( dataObj, "cardNo" );  
         
         if( json_item->type == cJSON_Array )
         {
@@ -1039,14 +1068,24 @@ uint8_t packetCard(uint8_t *cardID,uint8_t *descJson)
     cJSON_AddStringToObject(root, "deviceCode", gDevBaseParam.deviceCode.deviceSn);
     log_d("deviceCode = %s\r\n",gDevBaseParam.deviceCode.deviceSn);    
 
-    cJSON_AddStringToObject(root, "commandCode","10044");
-    cJSON_AddNumberToObject(root, "status", ON_LINE);   
+    cJSON_AddStringToObject(root, "commandCode","10044");//刷卡记录上送指令
+    
+    cJSON_AddNumberToObject(root, "enterType", 2);//刷卡
+    
+    if(gConnectStatus==1)
+    {
+        cJSON_AddNumberToObject(root, "status", ON_LINE);   
+    }
+    else
+    {
+        cJSON_AddNumberToObject(root, "status", OFF_LINE);   
+    }
     cJSON_AddStringToObject(root, "currentTime",(const char*)bsp_ds1302_readtime());
     
     log_d("4 cardid %02x,%02x,%02x,%02x\r\n",cardID[0],cardID[1],cardID[2],cardID[3]);
 
     memset(tmpCardID,0x00,sizeof(tmpCardID));
-    
+
     bcd2asc((uint8_t *)tmpCardID,cardID, 8, 1);
 
     log_d("CARD NO. = %s\r\n",tmpCardID);
@@ -1076,11 +1115,6 @@ uint8_t packetCard(uint8_t *cardID,uint8_t *descJson)
 }
 
 
-//响应模板下发打包函数
-uint8_t* packetRespTemplateJson(uint8_t *jsonBuff,char status)
-{
-
-}
 
 
 

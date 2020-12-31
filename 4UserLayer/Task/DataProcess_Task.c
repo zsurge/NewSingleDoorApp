@@ -234,8 +234,10 @@ static void vTaskDataProcess(void *pvParameters)
                     //发送卡号失败蜂鸣器提示
                     //或者是队列满                
                 } 
-
-                
+            }
+            else if(ptMsg->mode == REMOTE_OPEN_MODE)
+            {
+            
             }
             
       
