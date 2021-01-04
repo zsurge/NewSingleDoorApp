@@ -108,7 +108,7 @@ typedef struct
 
 const CMD_HANDLE_T CmdList[] =
 {
-    {"201",  OpenDoor},
+    {"10011",  OpenDoor},
 	{"1006", AbnormalAlarm},
 	{"1012", AddCardNo},
 	{"1053", DelCardNoAll},
@@ -121,7 +121,7 @@ const CMD_HANDLE_T CmdList[] =
     {"3002", GetServerIp},
     {"10001", GetTemplateParam},
     {"10004", DownLoadCardID},   
-    {"3005", RemoteOptDev},        
+    {"10031", RemoteOptDev},        
     {"10003", ClearUserInof},   
     {"10002", EnableDev}, //同绑定
 //    {"3012", DisableDev},//同解绑
@@ -174,10 +174,30 @@ void Proscess(void* data)
 
 static SYSERRORCODE_E RemoteResetDev ( uint8_t* msgBuf )//远程重启
 {
-      
-      NVIC_SystemReset(); 
-      
-      return NO_ERR;
+	SYSERRORCODE_E result = NO_ERR;
+    uint16_t len = 0;
+
+    if(!msgBuf)
+    {
+        return STR_EMPTY_ERR;
+    }
+    
+    uint8_t *buf = packetBaseJson(msgBuf,1);
+
+    if(buf == NULL)
+    {
+        return STR_EMPTY_ERR;
+    }
+    
+    len = strlen((const char*)buf);
+
+    log_d("RemoteResetDev = %d,buf = %s\r\n",len,buf);
+
+    mqttSendData(buf,len);    
+     
+    NVIC_SystemReset(); 
+    
+    return NO_ERR;
 }
 
 
@@ -271,19 +291,16 @@ SYSERRORCODE_E OpenDoor ( uint8_t* msgBuf )
     }
     
     log_d("======OpenDoor Pre = %3d%======\r\n",mem_perused(SRAMIN));
-    result = modifyJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"openStatus","1",1,buf);
-
-    if(result != NO_ERR)
-    {
-        return result;
-    }
+    
+   
+    strcpy(buf,packetBaseJson(msgBuf,1));
 
     len = strlen((const char*)buf);
 
-    log_d("OpenDoor len = %d,buf = %s\r\n",len,buf);
+    log_d("RemoteResetDev = %d,buf = %s\r\n",len,buf);
 
-    mqttSendData(buf,len);
-
+    mqttSendData(buf,len);  
+    
     log_d("gSectorBuff = %d\r\n",sizeof(gSectorBuff));
 
     log_d("======OpenDoor after = %3d%======\r\n",mem_perused(SRAMIN));
@@ -473,7 +490,9 @@ SYSERRORCODE_E UpgradeDev ( uint8_t* msgBuf )
     strcpy((char *)tmpUrl,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"url",1));
     log_d("tmpUrl = %s\r\n",tmpUrl);
     
-    ef_set_env("url", (const char*)GetJsonItem((const uint8_t *)tmpUrl,(const uint8_t *)"picUrl",0)); 
+//    ef_set_env("url", (const char*)GetJsonItem((const uint8_t *)tmpUrl,(const uint8_t *)"picUrl",0)); 
+    
+    ef_set_env("url",tmpUrl); 
 
     //2.设置升级状态为待升级状态
     ef_set_env("up_status", "101700"); 
@@ -737,7 +756,7 @@ SYSERRORCODE_E GetTemplateParam ( uint8_t* msgBuf )
     //保存模板数据 这里应该有一个线程专门用于读写FLASH，调试期间，暂时放在响应后边
     //saveTemplateParam(msgBuf);    
     
-    uint8_t *buf = packetRespTemplateJson(msgBuf,1);//packetBaseJson(msgBuf,1);
+    uint8_t *buf = packetRespTemplateJson(msgBuf,1);
 
     if(buf == NULL)
     {
@@ -871,75 +890,41 @@ static SYSERRORCODE_E RemoteOptDev ( uint8_t* msgBuf )
 {
     SYSERRORCODE_E result = NO_ERR;
     uint8_t buf[MQTT_TEMP_LEN] = {0};
-    uint8_t tagFloor[1] = {0};
-    uint8_t accessFloor[64] = {0};
     uint16_t len = 0;
-    char *multipleFloor[64] = {0};
-    int multipleFloorNum = 0;
-    
+    READER_BUFF_STRU *ptReaderBuf = &gReaderMsg;     
+
     if(!msgBuf)
     {
         return STR_EMPTY_ERR;
     }
-
-    log_d("3005 = >> %s\r\n",msgBuf);
-
-    if(gtemplateParam.templateCallingWay.isFace && gDevBaseParam.deviceState.iFlag == DEVICE_ENABLE)
-    {
-        //1.保存目标楼层
-        memset(accessFloor,0x00,sizeof(accessFloor));
-        strcpy((char *)accessFloor,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"currentLayer",1));
-        tagFloor[0] = atoi((const char*)accessFloor);
-
-        //3.保存楼层权限
-        memset(accessFloor,0x00,sizeof(accessFloor));
-        strcpy((char *)accessFloor,  (const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"accessLayer",1));
-        split((char *)accessFloor,",",multipleFloor,&multipleFloorNum); //调用函数进行分割 
-        
-        if(multipleFloorNum > 1)
-        {
-            for(len=0;len<multipleFloorNum;len++)
-            {
-                accessFloor[len] = atoi(multipleFloor[len]);
-            }
-        }  
-
-        if(strlen((const char*)tagFloor) == 0 && strlen((const char*)accessFloor)==0)
-        {
-            result = modifyJsonItem(msgBuf,"status","0",1,buf);
-        }
-        else
-        {
-            result = modifyJsonItem(msgBuf,"status","1",1,buf);
-        }        
-
-        if(result != NO_ERR)
-        {
-            return result;
-        }      
-        
-        len = strlen((const char*)buf);
-
-        log_d("RemoteOptDev len = %d,buf = %s\r\n",len,buf);
-
-        mqttSendData(buf,len);         
-
-         //发送目标楼层
-         if(strlen((const char*)tagFloor) == 1) 
-         {
-             //这里需要发消息到消息队列，进行呼梯
-             SendToQueue(tagFloor,strlen((const char*)tagFloor),AUTH_MODE_REMOTE);
-         }
-
-         //发送多楼层权限
-         if(strlen((const char*)accessFloor) > 1)
-         {
-            //这里需要发消息到消息队列，进行呼梯
-            SendToQueue(accessFloor,strlen((const char*)accessFloor),AUTH_MODE_REMOTE);
-         }  
-    }    
     
+    strcpy(buf,packetBaseJson(msgBuf,1));
+
+    len = strlen((const char*)buf);
+
+    log_d("RemoteResetDev = %d,buf = %s\r\n",len,buf);
+
+    mqttSendData(buf,len);      
+
+    ptReaderBuf->devID = READER1; 
+    ptReaderBuf->mode = REMOTE_OPEN_MODE;            
+
+    /* 使用消息队列实现指针变量的传递 */
+    if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+                 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+                 (TickType_t)10) != pdPASS )
+    {
+//                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+        log_d("send REMOTE_OPEN_MODE!\r\n"); 
+        //发送卡号失败蜂鸣器提示
+        //或者是队列满                
+    }     
+
+#if DEBUG_PRINT
+    TestFlash(CARD_MODE);
+#endif    
     return result;
+
 
 }
 
