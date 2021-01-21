@@ -124,7 +124,6 @@ const CMD_HANDLE_T CmdList[] =
     {"10031", RemoteOptDev},        
     {"10003", ClearUserInof},   
     {"10002", EnableDev}, //同绑定
-//    {"3012", DisableDev},//同解绑
     {"88888", SetLocalTime}, 
     {"3013", SetLocalTime_Elevator},
     {"30131", getRemoteTime},
@@ -490,7 +489,6 @@ SYSERRORCODE_E UpgradeDev ( uint8_t* msgBuf )
     strcpy((char *)tmpUrl,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"url",1));
     log_d("tmpUrl = %s\r\n",tmpUrl);
     
-//    ef_set_env("url", (const char*)GetJsonItem((const uint8_t *)tmpUrl,(const uint8_t *)"picUrl",0)); 
     
     ef_set_env("url",tmpUrl); 
 
