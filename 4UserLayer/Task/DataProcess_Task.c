@@ -49,7 +49,7 @@ const char *dataProcTaskName = "vDataProcTask";
  * 模块级变量                                   *
  *----------------------------------------------*/
 TaskHandle_t xHandleTaskDataProc = NULL;  
-//CMD_BUFF_STRU gCmd_buff = {0};
+CMD_BUFF_STRU gCmd_buff = {0};
 
 
 /*----------------------------------------------*
@@ -76,14 +76,15 @@ static void vTaskDataProcess(void *pvParameters)
     int ret = 0;
     int len = 0;
 
+    uint8_t openLeft[8] = { 0x02,0x00,0x07,0x01,0x06,0x4c,0x03,0x4D };    
+    uint8_t openRight[8] = { 0x02,0x00,0x07,0x01,0x06,0x52,0x03,0x53 };
     uint8_t jsonbuff[256] = {0};
 
-    uint32_t devID = 0;
     
-//    CMD_BUFF_STRU *ptCmd = &gCmd_buff;
+    CMD_BUFF_STRU *ptCmd = &gCmd_buff;
     READER_BUFF_STRU *ptMsg  = &gReaderRecvMsg;
     memset(&gReaderRecvMsg,0x00,sizeof(READER_BUFF_STRU));   
-//    memset(&gCmd_buff,0x00,sizeof(CMD_BUFF_STRU));       
+    memset(&gCmd_buff,0x00,sizeof(CMD_BUFF_STRU));       
     
     while (1)
     {
@@ -99,7 +100,6 @@ static void vTaskDataProcess(void *pvParameters)
         } 
 
         //读取缓冲区，若有数据，则先上送历史记录 
-//        while(gRecordIndex.accessRecoIndex-- > 0) 一条一条上送，而不是先全部上送
         if(gRecordIndex.accessRecoIndex > 0 && gConnectStatus==1)
         {
             len = readRecord(jsonbuff);
@@ -162,23 +162,20 @@ static void vTaskDataProcess(void *pvParameters)
                 {
                     log_d("read card success\r\n");     
 
-                    devID = ptMsg->devID;
-
-                    if(devID == READER1)
-                    {                    
-                        gOpenDoorTimer.flag = 1;
-                        gOpenDoorTimer.outTimer = 12000;
-                    }
-                    else if(devID == READER2)
-                    {
-                        gOpenDoor2Timer.flag = 1;
-                        gOpenDoor2Timer.outTimer = 12000;
-                    }
+                    ptCmd->cmd_len = 8;
                     
+                    if(ptMsg->devID == 1)
+                    {
+                        memcpy(ptCmd->cmd,openLeft,ptCmd->cmd_len);                
+                    }
+                    else
+                    {
+                        memcpy(ptCmd->cmd,openRight,ptCmd->cmd_len); 
+                    } 
 
         			/* 使用消息队列实现指针变量的传递 */
         			if(xQueueSend(xCmdQueue,             /* 消息队列句柄 */
-        						 (void *) &devID,             /* 发送结构体指针变量ptReader的地址 */
+        						 (void *) &ptCmd,             /* 发送结构体指针变量ptReader的地址 */
         						 (TickType_t)30) != pdPASS )
         			{
                         xQueueReset(xCmdQueue);
@@ -216,29 +213,22 @@ static void vTaskDataProcess(void *pvParameters)
                 //发送开门指令
 
                 log_d("read card success\r\n");     
-                
-                devID = 1;
-                gOpenDoorTimer.flag = 1;
-                gOpenDoorTimer.outTimer = 12000;
 
-    //            ptCmd->cmd_len = 8;  
-    //            memcpy(ptCmd->cmd,openLeft,ptCmd->cmd_len);  
+                ptCmd->cmd_len = 8;  
+                memcpy(ptCmd->cmd,openLeft,ptCmd->cmd_len);  
                 
     			/* 使用消息队列实现指针变量的传递 */
     			if(xQueueSend(xCmdQueue,             /* 消息队列句柄 */
-    						 (void *) &devID,             /* 发送结构体指针变量ptReader的地址 */
+    						 (void *) &ptCmd,             /* 发送结构体指针变量ptReader的地址 */
     						 (TickType_t)30) != pdPASS )
     			{
                     xQueueReset(xCmdQueue);
                     DBG("send card2  queue is error!\r\n"); 
                     //发送卡号失败蜂鸣器提示
                     //或者是队列满                
-                } 
+                }            
             }
-            else if(ptMsg->mode == REMOTE_OPEN_MODE)
-            {
-            
-            }
+
             
       
         /* 发送事件标志，表示任务正常运行 */        

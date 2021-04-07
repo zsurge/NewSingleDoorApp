@@ -103,8 +103,8 @@ static void AppTaskCreate (void)
     CreateLedTask();        //0
 
     //跟控制板通讯
-//    CreateCommTask();       //1
-    CreateOpenDoorTask();       //1  
+    CreateCommTask();       //1    //通道
+//    CreateOpenDoorTask();       //1  //门禁
 
     //读卡器
     CreateReaderTask();     //2    
@@ -168,7 +168,7 @@ static void AppObjCreate (void)
     
     
     xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
-                              (UBaseType_t ) QUEUE_SIZE);/* 消息的大小 */
+                              (UBaseType_t ) sizeof(CMD_BUFF_STRU));/* 消息的大小 */
     if(xCmdQueue == NULL)
     {
         App_Printf("create xCmdQueue error!\r\n");

@@ -267,7 +267,7 @@ static void vTaskComm(void *pvParameters)
             ptCmd->cmd[0],ptCmd->cmd[1],ptCmd->cmd[2],ptCmd->cmd[3],
             ptCmd->cmd[4],ptCmd->cmd[5],ptCmd->cmd[6],ptCmd->cmd[7]);
 
-            RS485_SendBuf(COM6, ptCmd->cmd, ptCmd->cmd_len); 
+            RS485_SendBuf(COM2, ptCmd->cmd, ptCmd->cmd_len); 
 
             sendToSpeak((uint8_t *)alarmInfo[OPENDOOR_TIPS]);
             
@@ -275,7 +275,7 @@ static void vTaskComm(void *pvParameters)
         else
         {
             //∑¢ÀÕ≤È—Ø        
-            RS485_SendBuf(COM6, (uint8_t *)readDevState, 7); 
+            RS485_SendBuf(COM2, (uint8_t *)readDevState, 7); 
         }
 
         vTaskDelay(50);    
@@ -298,7 +298,7 @@ void deal_rx_Parse(void)
     
     memset(&rxFromHost,0x00,sizeof(FROMHOST_STRU));   
     
-    while(RS485_Recv(COM6,&ch,1))
+    while(RS485_Recv(COM2,&ch,1))
     {       
        switch (rxFromHost.rxStatus)
         {                
@@ -669,7 +669,7 @@ void sendToSpeak(uint8_t *dat)
     addr[len] = crc;
 
 //    dbh("sendToSpeak", addr, len+1);
-    RS485_SendBuf(COM4,addr,len+1);        
+    RS485_SendBuf(COM3,addr,len+1);        
 }
 
 

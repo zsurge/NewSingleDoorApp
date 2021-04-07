@@ -62,11 +62,11 @@
  *----------------------------------------------*/
 
 #define MAX_CMD_LEN
-// typedef struct CMD_BUFF
-// {
-//    uint8_t cmd_len; 
-//    uint8_t cmd[32];
-// }CMD_BUFF_STRU;
+ typedef struct CMD_BUFF
+ {
+    uint8_t cmd_len; 
+    uint8_t cmd[32];
+ }CMD_BUFF_STRU;
 
 /*----------------------------------------------*
  * 模块级变量                                   *
@@ -78,7 +78,7 @@ extern QueueHandle_t xCmdQueue;
 extern QueueHandle_t xCardIDQueue; 
 
 
-//extern CMD_BUFF_STRU gCmd_buff;
+extern CMD_BUFF_STRU gCmd_buff;
 
 /*----------------------------------------------*
  * 内部函数原型说明                             *

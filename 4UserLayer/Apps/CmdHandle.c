@@ -196,7 +196,7 @@ static SYSERRORCODE_E RemoteResetDev ( uint8_t* msgBuf )//远程重启
      
     NVIC_SystemReset(); 
     
-    return NO_ERR;
+    return result;
 }
 
 
@@ -292,7 +292,7 @@ SYSERRORCODE_E OpenDoor ( uint8_t* msgBuf )
     log_d("======OpenDoor Pre = %3d%======\r\n",mem_perused(SRAMIN));
     
    
-    strcpy(buf,packetBaseJson(msgBuf,1));
+    strcpy((char *)buf,(const char *)packetBaseJson(msgBuf,1));
 
     len = strlen((const char*)buf);
 
@@ -490,7 +490,7 @@ SYSERRORCODE_E UpgradeDev ( uint8_t* msgBuf )
     log_d("tmpUrl = %s\r\n",tmpUrl);
     
     
-    ef_set_env("url",tmpUrl); 
+    ef_set_env("url",(const char*)tmpUrl); 
 
     //2.设置升级状态为待升级状态
     ef_set_env("up_status", "101700"); 
@@ -570,7 +570,7 @@ SYSERRORCODE_E EnableDev ( uint8_t* msgBuf )
     //1.读取指令字
     memset(typeBuf,0x00,sizeof(typeBuf));
     strcpy((char *)typeBuf,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"type",1));
-    type = atoi(typeBuf);
+    type = atoi((const char*)typeBuf);
     
     if(type == 1)
     {
@@ -584,7 +584,7 @@ SYSERRORCODE_E EnableDev ( uint8_t* msgBuf )
      //add 2020.04.27    
      xQueueReset(xCardIDQueue);  
      
-    strcpy(buf,packetBaseJson(msgBuf,1));
+    strcpy((char *)buf,(const char*)packetBaseJson(msgBuf,1));
     
     len = strlen((const char*)buf);
 
@@ -714,13 +714,13 @@ static SYSERRORCODE_E DelCardSingle( uint8_t* msgBuf )
     {
         //响应服务器
 //        result = modifyJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",(const uint8_t *)"1",0,buf);
-        strcpy(buf,packetBaseJson(msgBuf,1));
+        strcpy((char *)buf,(const char *)packetBaseJson(msgBuf,1));
     }
     else
     {
         //包括没有该条记录和其它错误
 //        result = modifyJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",(const uint8_t *)"0",0,buf);
-        strcpy(buf,packetBaseJson(msgBuf,0));
+        strcpy((char *)buf,(const char *)packetBaseJson(msgBuf,0));
     }  
 
 //    if(result != NO_ERR)
@@ -850,13 +850,13 @@ static SYSERRORCODE_E DownLoadCardID ( uint8_t* msgBuf )
         if(ret >= 1)
         {
 //            result = modifyJsonItem(packetBaseJson(msgBuf,1),"cardNo",tmpAsc,0,buf); 
-            strcpy(buf,packetBaseJson(msgBuf,1));
+            strcpy((char *)buf,(const char*)packetBaseJson(msgBuf,1));
         }
         else
         {
 //            result = modifyJsonItem(packetBaseJson(msgBuf,0),"cardNo",tmpAsc,0,buf); 
             
-            strcpy(buf,packetBaseJson(msgBuf,0));
+            strcpy((char *)buf,(const char*)packetBaseJson(msgBuf,0));
         }
 
 //        if(result != NO_ERR)
@@ -883,6 +883,7 @@ static SYSERRORCODE_E DownLoadCardID ( uint8_t* msgBuf )
 
 }
 
+
 //远程呼梯
 static SYSERRORCODE_E RemoteOptDev ( uint8_t* msgBuf )
 {
@@ -896,7 +897,7 @@ static SYSERRORCODE_E RemoteOptDev ( uint8_t* msgBuf )
         return STR_EMPTY_ERR;
     }
     
-    strcpy(buf,packetBaseJson(msgBuf,1));
+    strcpy((char *)buf,(const char*)packetBaseJson(msgBuf,1));
 
     len = strlen((const char*)buf);
 

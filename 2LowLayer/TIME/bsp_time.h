@@ -28,12 +28,15 @@ typedef struct _TIM_TYPE
 
 
 extern volatile uint32_t g500usTimerUART;
-//extern volatile uint32_t gHeartBeat;
 
-extern  TIM_TYPE gOpenDoorTimer;
-extern  TIM_TYPE gOpenDoor2Timer;
+
+//extern  TIM_TYPE gOpenDoorTimer;
+//extern  TIM_TYPE gOpenDoor2Timer;
 extern  TIM_TYPE gCardSortTimer;
 
+extern  volatile uint32_t gPlayTimer;
+extern  volatile uint32_t gFollowTimer;
+extern  volatile uint32_t gRetrogradeTimer;
 
 
 
