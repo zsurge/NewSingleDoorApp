@@ -1,3 +1,7 @@
+
+#define LOG_TAG    "LWIP_COMM"
+#include "elog.h"
+
 #include "lan8720.h" 
 #include "lwip_comm.h"
 
@@ -93,33 +97,33 @@ void lwip_comm_default_ip_set ( __lwip_dev* lwipx )
 	lwipx->remoteip[0]=192;
 	lwipx->remoteip[1]=168;
 	lwipx->remoteip[2]=110;
-	lwipx->remoteip[3]=78;
-
-	//MAC地址设置(高三字节固定为:2.0.0,低三字节用STM32唯一ID)
-//	lwipx->mac[0]=2;//高三字节(IEEE称之为组织唯一ID,OUI)地址固定为:2.0.0
-//	lwipx->mac[1]=0;
-//	lwipx->mac[2]=0;
-//	lwipx->mac[3]=(sn0>>16)&0XFF;//低三字节用STM32的唯一ID
-//	lwipx->mac[4]=(sn0>>8)&0XFFF;
-//	lwipx->mac[5]=sn0&0XFF;
+	lwipx->remoteip[3]=79;
+	
 
 	calcMac ( lwipx->mac );
 
 	//默认本地IP为:192.168.1.30
-	lwipx->ip[0]=192;
-	lwipx->ip[1]=168;
-	lwipx->ip[2]=110;
-	lwipx->ip[3]=98;
+//	lwipx->ip[0]=192;
+//	lwipx->ip[1]=168;
+//	lwipx->ip[2]=0;
+//	lwipx->ip[3]=155;
+
+	memcpy(lwipx->ip,gDevBaseParam.localIP.ip,4);
+	
 	//默认子网掩码:255.255.255.0
-	lwipx->netmask[0]=255;
-	lwipx->netmask[1]=255;
-	lwipx->netmask[2]=255;
-	lwipx->netmask[3]=0;
+//	lwipx->netmask[0]=255;
+//	lwipx->netmask[1]=255;
+//	lwipx->netmask[2]=255;
+//	lwipx->netmask[3]=0;
+	memcpy(lwipx->netmask,gDevBaseParam.localIP.netMask,4);
+	
 	//默认网关:192.168.1.1
-	lwipx->gateway[0]=192;
-	lwipx->gateway[1]=168;
-	lwipx->gateway[2]=110;
-	lwipx->gateway[3]=1;
+//	lwipx->gateway[0]=192;
+//	lwipx->gateway[1]=168;
+//	lwipx->gateway[2]=0;
+//	lwipx->gateway[3]=1;
+	memcpy(lwipx->gateway,gDevBaseParam.localIP.gateWay,4);
+	
 	lwipx->dhcpstatus=0;//没有DHCP
 }
 
@@ -130,7 +134,6 @@ void lwip_comm_default_ip_set ( __lwip_dev* lwipx )
 //      3,网卡添加失败.
 u8 lwip_comm_init ( void )
 {
-
 	struct netif* Netif_Init_Flag;		//调用netif_add()函数时的返回值,用于判断网络初始化是否成功
 	struct ip_addr ipaddr;  			//ip地址
 	struct ip_addr netmask; 			//子网掩码
@@ -138,66 +141,99 @@ u8 lwip_comm_init ( void )
 
 	if ( ETH_Mem_Malloc() )
 	{	
-//        printf ( "ETH_Mem_Malloc error\r\n" );
+        log_d ( "ETH_Mem_Malloc error\r\n" );
 		return 1;    //内存申请失败
 	}
-//	printf ( "ETH_Mem_Malloc\r\n" );
+	log_d ( "ETH_Mem_Malloc\r\n" );
 
 	if ( lwip_comm_mem_malloc() )
 	{
+	    log_d ( "lwip_comm_mem_malloc error\r\n" );
 		return 2;    //内存申请失败
 	}
-//	printf ( "lwip_comm_mem_malloc\r\n" );
+	log_d ( "lwip_comm_mem_malloc\r\n" );
 
 	lwip_comm_default_ip_set ( &lwipdev );	//设置默认IP等信息
-//	printf ( "lwip_comm_default_ip_set\r\n" );
+	log_d ( "lwip_comm_default_ip_set\r\n" );
 
     LAN8720_Init();
     
 	tcpip_init ( NULL,NULL );				//初始化tcp ip内核,该函数里面会创建tcpip_thread内核任务
-//	printf ( "tcpip_init\r\n" );
+	log_d ( "tcpip_init\r\n" );
 
-#if LWIP_DHCP		//使用动态IP
-	ipaddr.addr = 0;
-	netmask.addr = 0;
-	gw.addr = 0;
-#else				//使用静态IP
-	IP4_ADDR ( &ipaddr,lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3] );
-	IP4_ADDR ( &netmask,lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3] );
-	IP4_ADDR ( &gw,lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3] );
-	printf ( "网卡的MAC地址为:................%02x.%02x.%02x.%02x.%02x.%02x\r\n",lwipdev.mac[0],lwipdev.mac[1],lwipdev.mac[2],lwipdev.mac[3],lwipdev.mac[4],lwipdev.mac[5] );
-	printf ( "静态IP地址........................%d.%d.%d.%d\r\n",lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3] );
-	printf ( "子网掩码..........................%d.%d.%d.%d\r\n",lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3] );
-	printf ( "默认网关..........................%d.%d.%d.%d\r\n",lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3] );
-#endif
+    log_d("lwip_comm_init gDevBaseParam.localIP.ipMode.iMode = %x\r\n",gDevBaseParam.localIP.ipMode.iMode);
+
+    if(gDevBaseParam.localIP.ipMode.iMode == DHCP_IP)
+    {
+        ipaddr.addr = 0;
+        netmask.addr = 0;
+        gw.addr = 0;
+        log_d("set get ip mode is dhcp\r\n");
+    }
+    else
+    {
+    	IP4_ADDR ( &ipaddr,lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3] );
+    	IP4_ADDR ( &netmask,lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3] );
+    	IP4_ADDR ( &gw,lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3] );
+    	
+    	log_d ( "网卡的MAC地址为:................%02x.%02x.%02x.%02x.%02x.%02x\r\n",lwipdev.mac[0],lwipdev.mac[1],lwipdev.mac[2],lwipdev.mac[3],lwipdev.mac[4],lwipdev.mac[5] );
+    	log_d ( "静态IP地址........................%d.%d.%d.%d\r\n",lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3] );
+    	log_d ( "子网掩码..........................%d.%d.%d.%d\r\n",lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3] );
+    	log_d ( "默认网关..........................%d.%d.%d.%d\r\n",lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3] );
+    }
 
 	Netif_Init_Flag=netif_add ( &lwip_netif,&ipaddr,&netmask,&gw,NULL,&ethernetif_init,&tcpip_input ); //向网卡列表中添加一个网口
 	if ( Netif_Init_Flag==NULL )
 	{
+	    log_d("netif_add error\r\n");
 		return 4;    //网卡添加失败
 	}
 	else//网口添加成功后,设置netif为默认值,并且打开netif网口
 	{
 		netif_set_default ( &lwip_netif ); //设置netif为默认网口	
+		log_d("netif_set_default\r\n");
 	}
 
-	if(Link_Down == GetGB_LinkState())
+	if(netif_is_link_up(&lwip_netif))
 	{
 		netif_set_up(&lwip_netif); //打开netif网口
+	    log_d("netif_set_up\r\n");
 		
-		#ifdef LWIP_DHCP
-			SetGB_DHCPState(DHCP_START);
-		#endif
+		if(gDevBaseParam.localIP.ipMode.iMode == DHCP_IP)
+		{
+			SetGB_DHCPState(DHCP_START);			
+	        log_d("SetGB_DHCPState(DHCP_START)\r\n");
+		}	
 	}
 	else
 	{
 		/*  When the netif link is down this function must be called.*/
 		netif_set_down(&lwip_netif);
-		
-		#ifdef LWIP_DHCP
+		log_d("netif_set_down\r\n");
+		if(gDevBaseParam.localIP.ipMode.iMode == DHCP_IP)
+		{
 			SetGB_DHCPState(DHCP_LINK_DOWN);
-		#endif
-	}    
+			log_d("SetGB_DHCPState(DHCP_LINK_DOWN)\r\n");
+		}	
+	}      
+
+//	if(Link_Down == GetGB_LinkState())
+//	{
+//		netif_set_up(&lwip_netif); //打开netif网口
+//		
+//		#if LWIP_DHCP
+//	    SetGB_DHCPState(DHCP_START);
+//		#endif
+//	}
+//	else
+//	{
+//		/*  When the netif link is down this function must be called.*/
+//		netif_set_down(&lwip_netif);
+//		
+//		#if LWIP_DHCP
+//		SetGB_DHCPState(DHCP_LINK_DOWN);
+//		#endif
+//	}    
 
 	/* Set the link callback function, this function is called on change of link status*/
 	netif_set_link_callback(&lwip_netif, ETH_link_callback);
@@ -205,6 +241,8 @@ u8 lwip_comm_init ( void )
     
 	return 0;//操作OK.
 }
+
+
 
 
 
@@ -247,11 +285,6 @@ void ETH_link_callback(struct netif *netif)
 	struct ip_addr ipaddr;
 	struct ip_addr netmask;
 	struct ip_addr gw;
-	#ifndef LWIP_DHCP
-		uint8_t iptab[4] = {0};
-		uint8_t iptxt[20];
-	#endif /* LWIP_DHCP */
-
 
 	if(netif_is_link_up(netif))
 	{
@@ -259,17 +292,24 @@ void ETH_link_callback(struct netif *netif)
 		/* Restart MAC interface */
 		ETH_Start();
 
-		#ifdef LWIP_DHCP
+		if(gDevBaseParam.localIP.ipMode.iMode == DHCP_IP)
+		{
 			ipaddr.addr = 0;
 			netmask.addr = 0;
 			gw.addr = 0;
 
 			SetGB_DHCPState(DHCP_START);
-		#else
-			IP4_ADDR(&ipaddr, IP_ADDR0, IP_ADDR1, IP_ADDR2, IP_ADDR3);
-			IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1 , NETMASK_ADDR2, NETMASK_ADDR3);
-			IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
-		#endif /* LWIP_DHCP */
+	    }
+		else
+		{
+            IP4_ADDR ( &ipaddr,lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3] );
+            IP4_ADDR ( &netmask,lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3] );
+            IP4_ADDR ( &gw,lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3] );
+            log_d( "cb 网卡的MAC = %02x.%02x.%02x.%02x.%02x.%02x\r\n",lwipdev.mac[0],lwipdev.mac[1],lwipdev.mac[2],lwipdev.mac[3],lwipdev.mac[4],lwipdev.mac[5] );
+            log_d ( "cb ip = %d.%d.%d.%d\r\n",lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3] );
+            log_d ( "cb netmask = %d.%d.%d.%d\r\n",lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3] );
+            log_d ( "cb gateway = %d.%d.%d.%d\r\n",lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3] );
+		}
 
 		netif_set_addr(&lwip_netif, &ipaddr , &netmask, &gw);
     
@@ -281,10 +321,14 @@ void ETH_link_callback(struct netif *netif)
 		printf("<<<<<<<<<<<<<<<<link down>>>>>>>>>>>>>>>>> \r\n");
 		gConnectStatus = 0;//把联接标志置为失去联接
 		ETH_Stop();
-		#ifdef LWIP_DHCP
+		
+		if(gDevBaseParam.localIP.ipMode.iMode == DHCP_IP)
+		{
 			SetGB_DHCPState(DHCP_LINK_DOWN);
 			dhcp_stop(netif);
-		#endif /* LWIP_DHCP */
+		}
+	
+		
 
 		/*  When the netif link is down this function must be called.*/
 		netif_set_down(&lwip_netif);
@@ -297,9 +341,11 @@ void StartEthernet(void)
 	//* 初始化LwIP
 	lwip_comm_init();
 	
-#if LWIP_DHCP
-    StartvLwipDHCPTask(&lwip_netif);
-#endif
+    if(gDevBaseParam.localIP.ipMode.iMode == DHCP_IP)
+    {
+        
+        StartvLwipDHCPTask(&lwip_netif);
+    }
 	
 	StartvLwipComTask(&lwip_netif);
 }

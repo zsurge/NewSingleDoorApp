@@ -339,7 +339,7 @@ void deal_rx_Parse(void)
                     rxFromHost.rxPacketState = FINISH;  
                     rxFromHost.rxBuff[rxFromHost.rxCnt++] = ch;
                     rxFromHost.rxStatus = STEP2;
-                    rxFromHost.rxCRC ^=  ch;
+                    rxFromHost.rxCRC =  0;
                 }
                 break;         
             default:
@@ -535,9 +535,9 @@ void queryStatusResponse(void)
             writeLog((char *)sensorStateInfo[DETENTION_TIMEOUT]); 
             log_d(" 3 sensor DETENTION_TIMEOUT %d\r\n",gPlayTimer);
     
-            if(!gPlayTimer)
+            if(!gPlayTimer.outTimer)
             {
-                gPlayTimer = 18000;
+                gPlayTimer.outTimer = 18000;
                 sendToSpeak((uint8_t *)alarmInfo[RETENTION_TIPS]);   
             }
             break;              
@@ -554,18 +554,18 @@ void queryStatusResponse(void)
             writeLog((char *)hostStateInfo[RETROGRADE_ALARM]);  
             log_d(" 4----ÄæÐÐ----\r\n");  
 
-            if(!gRetrogradeTimer)
+            if(!gOpenDoor2Timer.outTimer)
             {
-                gRetrogradeTimer = 18000;
+                gOpenDoor2Timer.outTimer = 18000;
                 sendToSpeak((uint8_t *)alarmInfo[RETROGRADE_TIPS]);   
             }
             
             break;
         case FOLLOWING_ALARM:
             writeLog((char *)hostStateInfo[FOLLOWING_ALARM]);
-            if(!gFollowTimer)
+            if(!gOpenDoorTimer.outTimer)
             {
-                gFollowTimer = 18000;
+                gOpenDoorTimer.outTimer = 18000;
                 sendToSpeak((uint8_t *)alarmInfo[FOLLOWING_TIPS]);   
             }            
             

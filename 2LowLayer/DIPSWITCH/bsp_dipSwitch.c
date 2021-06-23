@@ -41,7 +41,7 @@ void bsp_dipswitch_init(void)
 {
 	GPIO_InitTypeDef  GPIO_InitStructure;
 
-	RCC_AHB1PeriphClockCmd ( RCC_AHB1Periph_GPIOG, ENABLE );	//使能GPIOG时钟
+	RCC_AHB1PeriphClockCmd (RCC_ALL_DIPSWITCH, ENABLE );	//使能GPIOG时钟
 
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_PIN_DIP0|GPIO_PIN_DIP1|GPIO_PIN_DIP2|GPIO_PIN_DIP3;

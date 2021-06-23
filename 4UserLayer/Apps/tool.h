@@ -31,7 +31,7 @@
  * 宏定义                                       *
  *----------------------------------------------*/
  
-//#define DEBUG_PRINT
+#define DEBUG_PRINT
 
 
 #define _myAssert(char,int) printf("Error:%s,%d\r\n",char,int)
@@ -44,12 +44,6 @@
 
 #define DBG(...) dbg(__FILE__, __LINE__, __VA_ARGS__)
 
-typedef struct {
-    char **str;     //the PChar of string array
-    size_t num;     //the number of string
-}IString;
-
-
 
 /*----------------------------------------------*
  * 常量定义                                     *
@@ -58,7 +52,6 @@ typedef struct {
 /*----------------------------------------------*
  * 模块级变量                                   *
  *----------------------------------------------*/
-
 
 /*----------------------------------------------*
  * 内部函数原型说明                             *
@@ -71,15 +64,13 @@ void asc2bcd(unsigned char *bcd_buf, unsigned char *ascii_buf, int conv_len, uns
 void bcd2asc(unsigned char *ascii_buf,unsigned char * bcd_buf, int conv_len, unsigned char type);
 
 void dbg(const char *file, const long line, const char *format, ...);
-
-
 void dbh(char *title,char *buf,int len);
-
 uint8_t is_bit_set(uint16_t      value, uint16_t bit);
 
 void int2Str(uint8_t* str, int32_t intnum);
 int32_t str2int(const char* str);
 uint8_t bcd2byte(uint8_t ucBcd);
+
 void HexToStr(uint8_t *pbDest, uint8_t *pbSrc, int nLen);
 uint8_t BCDToInt ( unsigned char bcd );//BCD转十进制
 uint8_t IntToBCD ( unsigned char intdat );//十进制转BCD
@@ -88,12 +79,11 @@ void split(char *src,const char *separator,char **dest,int *num);
 char *strstr_t(const char *str, const char *sub_str);
 int setbit(int num, int bit);
 int clearbit(int num, int bit);
+int getbit(int num,int bit);
+
 
 void calcMac(unsigned char *mac);
-
 void Insertchar(char *src,char*desc,char c);
-
-
 uint8_t compareArray(uint8_t *array1,uint8_t *array2,int len);
 
 

@@ -80,7 +80,7 @@ static SYSERRORCODE_E DelCardNoAll ( uint8_t* msgBuf ); //删除卡号
 static SYSERRORCODE_E UpgradeDev ( uint8_t* msgBuf ); //对设备进行升级
 static SYSERRORCODE_E UpgradeAck ( uint8_t* msgBuf ); //升级应答
 static SYSERRORCODE_E EnableDev ( uint8_t* msgBuf ); //开启设备
-static SYSERRORCODE_E DisableDev ( uint8_t* msgBuf ); //关闭设备
+//static SYSERRORCODE_E DisableDev ( uint8_t* msgBuf ); //关闭设备
 static SYSERRORCODE_E GetDevInfo ( uint8_t* msgBuf ); //获取设备信息
 static SYSERRORCODE_E GetTemplateParam ( uint8_t* msgBuf ); //获取模板参数
 static SYSERRORCODE_E GetServerIp ( uint8_t* msgBuf ); //获取模板参数
@@ -173,7 +173,7 @@ void Proscess(void* data)
 
 static SYSERRORCODE_E RemoteResetDev ( uint8_t* msgBuf )//远程重启
 {
-	SYSERRORCODE_E result = NO_ERR;
+
     uint16_t len = 0;
 
     if(!msgBuf)
@@ -217,7 +217,7 @@ static SYSERRORCODE_E SendToQueue(uint8_t *buf,int len,uint8_t authMode)
                  (void *) &ptMsg,   /* 发送指针变量recv_buf的地址 */
                  (TickType_t)50) != pdPASS )
     {
-        DBG("the queue is full!\r\n");                
+        log_d("the queue is full!\r\n");                
         xQueueReset(xCardIDQueue);
         result = QUEUE_FULL_ERR;
     } 
@@ -292,7 +292,7 @@ SYSERRORCODE_E OpenDoor ( uint8_t* msgBuf )
     log_d("======OpenDoor Pre = %3d%======\r\n",mem_perused(SRAMIN));
     
    
-    strcpy(buf,packetBaseJson(msgBuf,1));
+    strcpy((char *)buf,(char *)packetBaseJson(msgBuf,1));
 
     len = strlen((const char*)buf);
 
@@ -319,7 +319,7 @@ SYSERRORCODE_E OpenDoor ( uint8_t* msgBuf )
         //或者是队列满                
     }     
 
-#if DEBUG_PRINT
+#ifdef DEBUG_PRINT
     TestFlash(CARD_MODE);
 #endif    
 	return result;
@@ -490,7 +490,7 @@ SYSERRORCODE_E UpgradeDev ( uint8_t* msgBuf )
     log_d("tmpUrl = %s\r\n",tmpUrl);
     
     
-    ef_set_env("url",tmpUrl); 
+    ef_set_env((const char*)"url",(const char*)tmpUrl); 
 
     //2.设置升级状态为待升级状态
     ef_set_env("up_status", "101700"); 
@@ -570,7 +570,7 @@ SYSERRORCODE_E EnableDev ( uint8_t* msgBuf )
     //1.读取指令字
     memset(typeBuf,0x00,sizeof(typeBuf));
     strcpy((char *)typeBuf,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"type",1));
-    type = atoi(typeBuf);
+    type = atoi((const char*)typeBuf);
     
     if(type == 1)
     {
@@ -584,7 +584,7 @@ SYSERRORCODE_E EnableDev ( uint8_t* msgBuf )
      //add 2020.04.27    
      xQueueReset(xCardIDQueue);  
      
-    strcpy(buf,packetBaseJson(msgBuf,1));
+    strcpy((char *)buf,(const char *)packetBaseJson(msgBuf,1));
     
     len = strlen((const char*)buf);
 
@@ -600,41 +600,41 @@ SYSERRORCODE_E EnableDev ( uint8_t* msgBuf )
 
 }
 
-SYSERRORCODE_E DisableDev ( uint8_t* msgBuf )
-{
-    SYSERRORCODE_E result = NO_ERR;
-    uint8_t buf[MQTT_TEMP_LEN] = {0};
-    uint8_t type[4] = {"0"};
-    uint16_t len = 0;
+//SYSERRORCODE_E DisableDev ( uint8_t* msgBuf )
+//{
+//    SYSERRORCODE_E result = NO_ERR;
+//    uint8_t buf[MQTT_TEMP_LEN] = {0};
+//    uint8_t type[4] = {"0"};
+//    uint16_t len = 0;
 
-    if(!msgBuf)
-    {
-        return STR_EMPTY_ERR;
-    }
-
-
-    result = modifyJsonItem(msgBuf,"status","1",1,buf);
-
-    if(result != NO_ERR)
-    {
-        return result;
-    }
-
-    SaveDevState(DEVICE_DISABLE);
-    
-    
-    len = strlen((const char*)buf);
-
-    log_d("DisableDev len = %d,buf = %s,status = %x\r\n",len,buf,gDevBaseParam.deviceState.iFlag);
-
-    mqttSendData(buf,len);
-    
-    //这里需要发消息到消息队列，禁用
-    SendToQueue(type,strlen((const char*)type),AUTH_MODE_UNBIND);
-    return result;
+//    if(!msgBuf)
+//    {
+//        return STR_EMPTY_ERR;
+//    }
 
 
-}
+//    result = modifyJsonItem(msgBuf,"status","1",1,buf);
+
+//    if(result != NO_ERR)
+//    {
+//        return result;
+//    }
+
+//    SaveDevState(DEVICE_DISABLE);
+//    
+//    
+//    len = strlen((const char*)buf);
+
+//    log_d("DisableDev len = %d,buf = %s,status = %x\r\n",len,buf,gDevBaseParam.deviceState.iFlag);
+
+//    mqttSendData(buf,len);
+//    
+//    //这里需要发消息到消息队列，禁用
+//    SendToQueue(type,strlen((const char*)type),AUTH_MODE_UNBIND);
+//    return result;
+
+
+//}
 
 //SYSERRORCODE_E SetJudgeMode ( uint8_t* msgBuf )
 //{
@@ -714,13 +714,13 @@ static SYSERRORCODE_E DelCardSingle( uint8_t* msgBuf )
     {
         //响应服务器
 //        result = modifyJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",(const uint8_t *)"1",0,buf);
-        strcpy(buf,packetBaseJson(msgBuf,1));
+        strcpy((char *)buf,(const char*)packetBaseJson(msgBuf,1));
     }
     else
     {
         //包括没有该条记录和其它错误
 //        result = modifyJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",(const uint8_t *)"0",0,buf);
-        strcpy(buf,packetBaseJson(msgBuf,0));
+        strcpy((char *)buf,(const char *)packetBaseJson(msgBuf,0));
     }  
 
 //    if(result != NO_ERR)
@@ -850,13 +850,13 @@ static SYSERRORCODE_E DownLoadCardID ( uint8_t* msgBuf )
         if(ret >= 1)
         {
 //            result = modifyJsonItem(packetBaseJson(msgBuf,1),"cardNo",tmpAsc,0,buf); 
-            strcpy(buf,packetBaseJson(msgBuf,1));
+            strcpy((char *)buf,(const char*)packetBaseJson(msgBuf,1));
         }
         else
         {
 //            result = modifyJsonItem(packetBaseJson(msgBuf,0),"cardNo",tmpAsc,0,buf); 
             
-            strcpy(buf,packetBaseJson(msgBuf,0));
+            strcpy((char *)buf,(const char*)packetBaseJson(msgBuf,0));
         }
 
 //        if(result != NO_ERR)
@@ -896,7 +896,7 @@ static SYSERRORCODE_E RemoteOptDev ( uint8_t* msgBuf )
         return STR_EMPTY_ERR;
     }
     
-    strcpy(buf,packetBaseJson(msgBuf,1));
+    strcpy((char *)buf,(const char*)packetBaseJson(msgBuf,1));
 
     len = strlen((const char*)buf);
 
@@ -918,7 +918,7 @@ static SYSERRORCODE_E RemoteOptDev ( uint8_t* msgBuf )
         //或者是队列满                
     }     
 
-#if DEBUG_PRINT
+#ifdef DEBUG_PRINT
     TestFlash(CARD_MODE);
 #endif    
     return result;

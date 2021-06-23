@@ -53,48 +53,24 @@ TaskHandle_t xHandleTaskHandShake = NULL;      //LED灯
  * 内部函数原型说明                             *
  *----------------------------------------------*/
 static void vTaskHandShake(void *pvParameters);
-static void DisplayDevInfo (void);
+
 
 
 static void vTaskHandShake(void *pvParameters)
 {
-//    uint32_t i_boot_times = NULL;
-//    char *c_old_boot_times, c_new_boot_times[12] = {0};
-//    uint8_t bcdbuf[6] = {0};  
-
-
-//    log_d("start vTaskHandShake\r\n");
-//    
-//    /* get the boot count number from Env */
-//    c_old_boot_times = ef_get_env("boot_times");
-
-//    i_boot_times = atol(c_old_boot_times);
-//    
-//    /* boot count +1 */
-//    i_boot_times ++;
-
-//    /* interger to string */
-//    sprintf(c_new_boot_times,"%012ld", i_boot_times);
-//    
-//    /* set and store the boot count number to Env */
-//    ef_set_env("boot_times", c_new_boot_times);    
-
-//    asc2bcd(bcdbuf,(uint8_t *)c_new_boot_times , 12, 0);
 
     //读取本地时间
     log_i("bsp_ds1302_readtime= %s\r\n",bsp_ds1302_readtime());
 
     //读取模板数据
 
-//    eraseUserDataAll();
+//  eraseUserDataAll();
     
     initRecordIndex();
     
     initDevBaseParam();
 
     initTemplateParam();
-    
-    DisplayDevInfo();
     
     vTaskDelay(500);
     vTaskDelete( NULL ); //删除自己
@@ -112,18 +88,7 @@ void CreateHandShakeTask(void)
 }
 
 
-static void DisplayDevInfo(void)
-{
-    printf("\r\n==========Version==========\r\n");
-	printf("Softversion :%s\r\n",gDevinfo.SoftwareVersion);
-    printf("HardwareVersion :%s\r\n", gDevinfo.HardwareVersion);
-	printf("Model :%s\r\n", gDevinfo.Model);
-	printf("ProductBatch :%s\r\n", gDevinfo.ProductBatch);	    
-	printf("BulidDate :%s\r\n", gDevinfo.BulidDate);
-	printf("DevSn :%s\r\n", gDevinfo.GetSn());
-    printf("Devip :%s\r\n", gDevinfo.GetIP());
-	printf("DevID :%s\r\n", gDevBaseParam.deviceCode.qrSn);
-}
+
 
 
 

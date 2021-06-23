@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    spi_flash.h
+  * @file    bsp_spi_mram.h
   * @author  MCD Application Team
   * @version V1.0.1
   * @date    13-April-2012
@@ -27,8 +27,8 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __SPI_FLASH_H
-#define __SPI_FLASH_H
+#ifndef __BSP_SPI_MRAM_H
+#define __BSP_SPI_MRAM_H
 
 #ifdef __cplusplus
  extern "C" {
@@ -131,3 +131,4 @@ void SPI_FLASH_BulkErase(void);
 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+

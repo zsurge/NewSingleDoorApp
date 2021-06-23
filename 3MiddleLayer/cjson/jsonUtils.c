@@ -353,7 +353,7 @@ SYSERRORCODE_E saveUpgradeData(uint8_t *jsonBuff)
     SYSERRORCODE_E result = NO_ERR;
     
     cJSON* root,*newroot,*tmpdataObj,*json_devCode,*productionModel,*id,*json_cmd;
-    cJSON* version,*softwareFirmware,*versionType;
+    cJSON* version,*versionType;
     char *tmpBuf;
     
     root = cJSON_Parse ( ( char* ) jsonBuff );    //解析数据包
@@ -383,7 +383,7 @@ SYSERRORCODE_E saveUpgradeData(uint8_t *jsonBuff)
     productionModel = cJSON_GetObjectItem ( tmpdataObj, "url" );
     id = cJSON_GetObjectItem ( tmpdataObj, "id" );
     version = cJSON_GetObjectItem ( tmpdataObj, "version" );
-//    softwareFirmware = cJSON_GetObjectItem ( tmpdataObj, "name" );
+
     versionType = cJSON_GetObjectItem ( tmpdataObj, "type" ); 
 
     if(json_devCode)
@@ -401,8 +401,7 @@ SYSERRORCODE_E saveUpgradeData(uint8_t *jsonBuff)
     if(version)
         cJSON_AddStringToObject(newroot, "version", version->valuestring);
 
-//    if(softwareFirmware)
-//        cJSON_AddStringToObject(newroot, "softwareFirmware", softwareFirmware->valuestring);
+
         
     if(versionType)
         cJSON_AddNumberToObject(newroot, "versionType", versionType->valueint);  

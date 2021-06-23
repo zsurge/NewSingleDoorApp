@@ -473,14 +473,22 @@ char *strstr_t(const char *str, const char *sub_str)
     return NULL;
 }
 
+//设置num的第bit位为1,并返回新的值
 int setbit(int num, int bit) 
 {
 	return num |= (1 << bit);
 }
 
+//设置num的第bit位为0,并返回新的值
 int clearbit(int num, int bit) 
 {
 	return num &= ~(1 << bit);
+}
+
+//获取num的第bit位
+int getbit(int num,int bit)
+{
+    return (num >> bit) & 1;
 }
 
 void calcMac(unsigned char *mac)

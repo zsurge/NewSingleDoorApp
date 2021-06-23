@@ -307,8 +307,13 @@ LinkState_TypeDef GetPHYLinkState(void)
 	/*读取连接状态位*/
 	tempdata &= 0x04;
 	tempdata >>= 2;
+
+	if(tempdata == 0)
+	{
+	    return Link_Down;
+	}
 	
-	return tempdata;
+	return Link_Up;
 }
 
 

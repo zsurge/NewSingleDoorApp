@@ -15,6 +15,11 @@
     作    者   : 张舵
     修改内容   : 创建文件
 
+使用拨码开关来区分工作模式
+bit1	ON=0:门禁             OFF=1: 通道
+bit2	ON=0: 一门门禁	        OFF=1:二门门禁
+bit3	ON=0: 485读卡器	    OFF=1:韦根读卡器
+bit4	ON=0: 工作模式	        OFF=1：测试模式
 ******************************************************************************/
 
 
@@ -58,10 +63,10 @@ static void EasyLogInit(void);
 int main(void)
 {   
     //硬件初始化
-    bsp_Init();  
+    bsp_Init(); 
 
-    EasyLogInit();      
-
+    EasyLogInit();  
+    
 	/* 创建任务通信机制 */
 	AppObjCreate();
 
@@ -94,31 +99,50 @@ static void AppTaskCreate (void)
     taskENTER_CRITICAL();    
 
     //网卡初始化
-    StartEthernet();   
-
-    //握手
-    CreateHandShakeTask();
+    StartEthernet();  
 
     //LED灯
-    CreateLedTask();        //0
+    CreateLedTask();                //0 2
 
     //跟控制板通讯
-//    CreateCommTask();       //1
-    CreateOpenDoorTask();       //1  
+
+    if(DIP0 == 1)
+    {
+        //通道闸
+        CreateCommTask();           //1 8  
+    }
+    else
+    {   
+        //门禁
+        CreateOpenDoorTask();       //1 8          
+    }
+
 
     //读卡器
-    CreateReaderTask();     //2    
-//    CreateRs485ReaderTask();
+    if(DIP2 == 1)
+    {
+        //韦根读卡器
+        CreateReaderTask();         //2   1    
+    }
+    else
+    {    
+        //RS485读卡器
+        CreateRs485ReaderTask();     // 2 1    
+    }
 
     //卡数据处理
-    CreateDataProcessTask();        //3
+    CreateDataProcessTask();        //3   6
+    
 
     //MQTT通讯
-    CreateMqttTask();               //4
+    CreateMqttTask();               //4   5
 
-    //看门狗
-    CreateWatchDogTask();
-
+    //看门狗 只要在工作模式下才启动
+    if(DIP3 == 0)
+    {
+        CreateWatchDogTask();
+    }
+    
     //删除本身
     vTaskDelete(xHandleTaskAppCreate); //删除AppTaskCreate任务
 
@@ -166,18 +190,27 @@ static void AppObjCreate (void)
         App_Printf("create xCardIDQueue error!\r\n");
     }
     
-    
-    xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
-                              (UBaseType_t ) QUEUE_SIZE);/* 消息的大小 */
-    if(xCmdQueue == NULL)
+
+    if(DIP0 == 0)
     {
-        App_Printf("create xCmdQueue error!\r\n");
+        xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
+                                  (UBaseType_t ) QUEUE_SIZE);/* 消息的大小 */
+        if(xCmdQueue == NULL)
+        {
+            App_Printf("create xCmdQueue error!\r\n");
+        }
     }
-   
-
-
-
+    else
+    {
+        xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
+                                  (UBaseType_t ) sizeof(CMD_BUFF_STRU *));/* 消息的大小 */
+        if(xCmdQueue == NULL)
+        {
+            App_Printf("create xCmdQueue error!\r\n");
+        }
+    }
 }
+
 
 
 /*
@@ -209,6 +242,8 @@ static void  App_Printf(char *format, ...)
 
    	xSemaphoreGive(gxMutex);
 }
+
+
 
 
 static void EasyLogInit(void)

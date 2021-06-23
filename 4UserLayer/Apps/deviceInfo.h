@@ -30,7 +30,7 @@
  #define MQTT_TOPIC_MAX_LEN     128
 
  #define DEFAULT_INIVAL 0x55AA55AA
- #define DEFAULT_DEV_NAME "ELEVATOR"
+ #define DEFAULT_DEV_NAME "SMARTDOOR"
 
  #define DEVICE_DISABLE 0x00
  #define DEVICE_ENABLE  0x5555AAAA
@@ -40,6 +40,9 @@
 
  #define WRITE_PRARM    0x01
  #define READ_PRARM     0x02
+
+ #define STATIC_IP      0x55AA55AA
+ #define DHCP_IP        0xAA55AA55
 
 
 //#define DEFAULT_TEMPLATE_PARAM                                              
@@ -59,6 +62,7 @@
  * 常量定义                                     *
  *----------------------------------------------*/
 ////////////////////模板信息////////////////////////////////////////
+ 
  //创建人信息
  typedef struct
  {
@@ -160,9 +164,53 @@ typedef struct
     char subscribe[MQTT_TOPIC_MAX_LEN]; //订阅的主题
 }MQTT_TOPIC_STRU;
 
+//IP的获取方式 静态和动态（DHCP）
+typedef union
+{
+	unsigned int iMode;        
+	unsigned char cMode[4];    
+}IP_MODE;
 
+typedef struct IP_CONFIG
+{
+    uint8_t ip[4];
+    uint8_t netMask[4];
+    uint8_t gateWay[4];
+    //设置IP状态
+    IP_MODE ipMode; 
+}IP_CONFIG_STRU;
+
+
+ //工作模式 0 = 测模式；1 = 门禁模式；2=通道闸模式
+ //程序模式
+ typedef enum {
+     PROGRAMMODE_TEST = 0,      //测试模式 
+     PROGRAMMODE_DOOR,          //门禁模式
+     PROGRAMMODE_CHANNEL        //通道闸模式
+ }PROGRAM_MODE;
+
+  //读卡器类别
+ typedef enum {
+     CARD_READER_WG = 0,       //韦根读卡器
+     CARD_READER_RS485         //RS485读卡器
+ }CARD_READER_TYPE;
+
+   //读卡器类别
+ typedef enum {
+     DOOR_TYPE_ONE = 0,      //一门门禁
+     DOOR_TYPE_TWO           //二门门禁
+ }DOOR_TYPE;
+
+ 
 typedef struct DEV_BASE_PARAM
 {
+    //程序模式
+    PROGRAM_MODE progamMode;    //程序是 测试/门禁/通道 模式
+
+    CARD_READER_TYPE cardReaderType; //韦根/485
+
+    DOOR_TYPE doorType;         //一门/两门   
+    
     //设备状态
     DEVICE_SWITCH deviceState; //\x55\xAA\x55\xBB 设备可用  
     
@@ -173,8 +221,10 @@ typedef struct DEV_BASE_PARAM
     UPGRADE_URL_STRU upgradeInfo;   
 
     //MQTT参数
-    MQTT_TOPIC_STRU mqttTopic;  
-    
+    MQTT_TOPIC_STRU mqttTopic; 
+
+    //设置IP地址
+    IP_CONFIG_STRU localIP;   
 }DEV_BASE_PARAM_STRU;
 
 ///////////////////////FLASH相关///////////////////////////////////////////
@@ -186,8 +236,6 @@ typedef struct RECORDINDEX
     volatile uint32_t delCardNoIndex;   //当前已存储了多少个已删除的卡号    
     volatile uint32_t accessRecoIndex;   //当前已存储了多少通行记录
 }RECORDINDEX_STRU;
-
-
 
 /*----------------------------------------------*
  * 模块级变量                                   *

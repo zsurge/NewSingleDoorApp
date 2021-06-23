@@ -36,7 +36,8 @@ void StartvLwipComTask(void * pram)
 
 void ChangeNetifLinkStatues(void *pvParameters)
 {
-	LinkState_TypeDef tempdata = 0;
+	LinkState_TypeDef tempdata = Link_Down;
+	
 	struct netif * tempnetif = (struct netif *)pvParameters;
 	
 	tempdata = GetPHYLinkState();

@@ -130,7 +130,7 @@ static void vTaskReader(void *pvParameters)
 						 (TickType_t)10) != pdPASS )
 			{
 //                xQueueReset(xCardIDQueue); 删除该句，为了防止在下发数据的时候刷卡
-                DBG("send card1  queue is error!\r\n"); 
+                log_d("send card1  queue is error!\r\n"); 
                 //发送卡号失败蜂鸣器提示
                 //或者是队列满                
             } 
@@ -157,7 +157,7 @@ static void vTaskReader(void *pvParameters)
 						 (TickType_t)10) != pdPASS )
 			{
 //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
-                DBG("send card2  queue is error!\r\n"); 
+                log_d("send card2  queue is error!\r\n"); 
                 //发送卡号失败蜂鸣器提示
                 //或者是队列满                
             }

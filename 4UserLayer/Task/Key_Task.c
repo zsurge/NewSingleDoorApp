@@ -28,7 +28,6 @@
 #include "tool.h"
 #include "bsp_beep.h"
 #include "localdata.h"
-#include "bsp_MB85RC128.h"
 #include "test.h"
 
 
@@ -38,7 +37,7 @@
 /*----------------------------------------------*
  * 宏定义                                       *
  *----------------------------------------------*/
-#define KEY_STK_SIZE        (configMINIMAL_STACK_SIZE*4)
+#define KEY_STK_SIZE        (configMINIMAL_STACK_SIZE)
 #define KEY_TASK_PRIO	    ( tskIDLE_PRIORITY + 3)
 
 /*----------------------------------------------*
@@ -55,7 +54,7 @@ TaskHandle_t xHandleTaskKey = NULL;
  * 内部函数原型说明                             *
  *----------------------------------------------*/
 static void vTaskKey(void *pvParameters);
-static void check_msg_queue(void);
+//static void check_msg_queue(void);
 
 
 
@@ -71,76 +70,29 @@ void CreateKeyTask(void)
 }
 
 static void vTaskKey(void *pvParameters)
-{
-    
+{    
 	uint8_t ucKeyCode;
-	uint8_t pcWriteBuffer[1024];
-
-
+	
     uint32_t g_memsize;
 
-    log_d("start vTaskKey\r\n");
+
     while(1)
     {
         ucKeyCode = bsp_Key_Scan(0);      
-		
+
+
 		if (ucKeyCode != KEY_NONE)
-		{
-            //dbg("ucKeyCode = %d\r\n",ucKeyCode);
-              
+		{              
 			switch (ucKeyCode)
 			{
 				/* K1键按下 打印任务执行情况 */
-				case KEY_SET_PRES:	             
-					printf("=================================================\r\n");
-					printf("任务名      任务状态 优先级   剩余栈 任务序号\r\n");
-					vTaskList((char *)&pcWriteBuffer);
-					printf("%s\r\n", pcWriteBuffer);
-                    
-					printf("\r\n任务名       运行计数         使用率\r\n");
-					vTaskGetRunTimeStats((char *)&pcWriteBuffer);
-					printf("%s\r\n", pcWriteBuffer);          
-
-                    g_memsize = xPortGetFreeHeapSize();
-                    printf("系统当前内存大小为 %d 字节，开始申请内存\r\n",g_memsize);
-//                    farm_read();
+				case KEY0_PRES:	             
+                    log_d("KEY0_PRES\r\n");
 					break;				
 				/* K2键按下，打印串口操作命令 */
-				case KEY_RR_PRES:                 
-                    check_msg_queue();                    
-
-                    bsp_ds1302_mdifytime("2020-08-26 12:00:00");
-                    
-                    log_d("read gpio = %02x\r\n",bsp_dipswitch_read());
-//                      searchHeadTest("24450854");
-//                    farm_test();
-
-//                    testSplit();
-//                    eraseUserDataAll();
-//                      ee_test();
-//			        
-					break;
-				case KEY_LL_PRES:   
-                    log_i("KEY_DOWN_K3\r\n");
-//                    searchHeadTest("16707692");
-//                    ef_env_set_default();
-//                    calcRunTime();       
-//                    bsp_ds1302_mdifytime("2020-03-31 10:18:20");
-                    log_d("bsp_ds1302_readtime = %s\r\n",bsp_ds1302_readtime());
-//                    ef_set_env_blob("device_sn","88888888",8); 
-//                    ef_print_env();
-//                    searchHeaderIndex("00012926",USER_MODE,&index);
-
-
-					break;
-				case KEY_OK_PRES:    
-//                    test_env();
-                   
-                     log_d("KEY_DOWN_K4\r\n");
-//                    ef_set_env_blob("remote_sn","7A13DCC67054F72CC07F",20);
-//                ef_set_env_blob("remote_sn","823545AE9B2345B08FD8",20);
-                    
-					break;                
+				case KEY1_PRES:                 
+                    log_d("KEY1_PRES\r\n");//			        
+					break;         
 				
 				/* 其他的键值不处理 */
 				default:   
@@ -148,9 +100,6 @@ static void vTaskKey(void *pvParameters)
 					break;
 			}
 		}
-
-        /* 发送事件标志，表示任务正常运行 */
-		xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_2);
 		
 		vTaskDelay(20);
 	}   
@@ -159,19 +108,19 @@ static void vTaskKey(void *pvParameters)
 
 
 //查询Message_Queue队列中的总队列数量和剩余队列数量
-void check_msg_queue(void)
-{
-    
-	u8 msgq_remain_size;	//消息队列剩余大小
-    u8 msgq_total_size;     //消息队列总大小
-    
-    taskENTER_CRITICAL();   //进入临界区
-    msgq_remain_size=uxQueueSpacesAvailable(xCmdQueue);//得到队列剩余大小
-    msgq_total_size=uxQueueMessagesWaiting(xCmdQueue)+uxQueueSpacesAvailable(xCmdQueue);//得到队列总大小，总大小=使用+剩余的。
-	printf("Total Size = %d, Remain Size = %d\r\n",msgq_total_size,msgq_remain_size);	//显示DATA_Msg消息队列总的大小
+//void check_msg_queue(void)
+//{
+//    
+//	u8 msgq_remain_size;	//消息队列剩余大小
+//    u8 msgq_total_size;     //消息队列总大小
+//    
+//    taskENTER_CRITICAL();   //进入临界区
+//    msgq_remain_size=uxQueueSpacesAvailable(xCmdQueue);//得到队列剩余大小
+//    msgq_total_size=uxQueueMessagesWaiting(xCmdQueue)+uxQueueSpacesAvailable(xCmdQueue);//得到队列总大小，总大小=使用+剩余的。
+//	printf("Total Size = %d, Remain Size = %d\r\n",msgq_total_size,msgq_remain_size);	//显示DATA_Msg消息队列总的大小
 
-    taskEXIT_CRITICAL();    //退出临界区
-}
+//    taskEXIT_CRITICAL();    //退出临界区
+//}
 
 
 

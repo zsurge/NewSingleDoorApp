@@ -31,8 +31,9 @@ volatile uint32_t ulHighFrequencyTimerTicks = 0UL;
 volatile uint32_t g500usTimerUART = 0;
 //volatile uint32_t gHeartBeat = 0;
 
-TIM_TYPE gOpenDoorTimer = 0;
-TIM_TYPE gOpenDoor2Timer = 0;
+TIM_TYPE gPlayTimer = {0};
+TIM_TYPE gOpenDoorTimer = {0};
+TIM_TYPE gOpenDoor2Timer = {0};
 TIM_TYPE gCardSortTimer = {0};
 
 
@@ -41,6 +42,7 @@ TIM_TYPE gCardSortTimer = {0};
 void bsp_TimeSysTickHandler (void)
 {
     if (g500usTimerUART) g500usTimerUART--;  
+    if (gPlayTimer.outTimer) gPlayTimer.outTimer--; 
     if (gOpenDoorTimer.outTimer) gOpenDoorTimer.outTimer--; 
     if (gOpenDoor2Timer.outTimer) gOpenDoor2Timer.outTimer--; 
     if (gCardSortTimer.outTimer) gCardSortTimer.outTimer--;    

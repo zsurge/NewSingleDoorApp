@@ -20,13 +20,11 @@
 /*----------------------------------------------*
  * 包含头文件                                   *
  *----------------------------------------------*/
-#define LOG_TAG    "ini"
-#include "elog.h"
-
 #include "ini.h"
 #include "stdlib.h"
 #include "bsp_spi_flash.h"
-#include "spi_flash.h" 
+#include "FreeRTOS.h"
+#include "task.h"
 
 
 TEMPLATE_PARAM_STRU gtemplateParam;
@@ -89,7 +87,7 @@ void SaveDevState(uint32_t state)
 
     if(ret != 1)
     {
-        log_e("write device state error\r\n");
+        DBG("write device state error\r\n");
     }    
 }
 
@@ -102,7 +100,6 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
     
     int holidayTimeMapCnt=0,peakTimeMapCnt=0,index = 0;
     uint8_t ret = 0;
-    char tmpbuf[8] = {0};
     char tmpIndex[2] = {0};
     char tmpKey[32] = {0};
     char *callingWay[4] = {0}; //存放分割后的子字符串 
@@ -123,14 +120,14 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
     if (!root)  
     {  
         cJSON_Delete(root);
-        log_d("Error before: [%s]\r\n",cJSON_GetErrorPtr());  
+        DBG("Error before: [%s]\r\n",cJSON_GetErrorPtr());  
         return CJSON_PARSE_ERR;
     } 
 
     data = cJSON_GetObjectItem(root, "data");
     if(data == NULL)
     {
-        log_d("data NULL\r\n");
+        DBG("data NULL\r\n");
         result = CJSON_GETITEM_ERR;
         cJSON_Delete(root);
         return result;        
@@ -139,7 +136,7 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
     templateData = cJSON_GetObjectItem(data, "template");
     if(templateMap == NULL)
     {
-        log_d("templateData NULL\r\n");
+        DBG("templateData NULL\r\n");
         result = CJSON_GETITEM_ERR;
         cJSON_Delete(root);
         return result;   
@@ -148,7 +145,7 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
     templateMap = cJSON_GetObjectItem(templateData, "templateMap");
     if(templateMap == NULL)
     {
-        log_d("templateMap NULL\r\n");
+        DBG("templateMap NULL\r\n");
         result = CJSON_GETITEM_ERR;
         cJSON_Delete(root);
         return result;   
@@ -157,7 +154,7 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
     holidayTimeMap = cJSON_GetObjectItem(templateData, "hoildayTimeMap");
     if(holidayTimeMap == NULL)
     {
-        log_d("hoildayTimeMap NULL\r\n");
+        DBG("hoildayTimeMap NULL\r\n");
         result = CJSON_GETITEM_ERR;
         cJSON_Delete(root);
         return result;   
@@ -166,7 +163,7 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
     peakTimeMap = cJSON_GetObjectItem(templateData, "peakTimeMap");
     if(peakTimeMap ==NULL)
     {
-        log_d("peakTimeMap NULL\r\n");
+        DBG("peakTimeMap NULL\r\n");
         result = CJSON_GETITEM_ERR;
         cJSON_Delete(root);
         return result;   
@@ -179,24 +176,24 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
     templateParam->id = json_item->valueint;
 //    sprintf(tmpbuf,"%8d",templateParam->id);
 //    ef_set_env_blob("templateID",tmpbuf,8); 
-    log_d("templateParam->id = %d\r\n",templateParam->id);
+    DBG("templateParam->id = %d\r\n",templateParam->id);
 
     json_item = cJSON_GetObjectItem(templateMap, "templateCode");
     strcpy((char *)templateParam->templateCode,json_item->valuestring);
 //    ef_set_env_blob("templateCode",templateParam->templateCode,strlen((const char *)templateParam->templateCode)); 
-    log_d("templateParam->templateCode = %s\r\n",templateParam->templateCode);
+    DBG("templateParam->templateCode = %s\r\n",templateParam->templateCode);
 
     json_item = cJSON_GetObjectItem(templateMap, "templateName");
     strcpy((char *)templateParam->templateName,json_item->valuestring);
 //    ef_set_env_blob("templateName",templateParam->templateName,strlen(templateParam->templateName)); 
-    log_d("templateParam->templateName = %s\r\n",templateParam->templateName);    
+    DBG("templateParam->templateName = %s\r\n",templateParam->templateName);    
 
     json_item = cJSON_GetObjectItem(templateMap, "templateStatus");
     templateParam->templateStatus = json_item->valueint;
 //    memset(tmpbuf,0x00,sizeof(tmpbuf));
 //    sprintf(tmpbuf,"%8d",templateParam->templateStatus);
 //    ef_set_env_blob("templateStatus",tmpbuf,8); 
-    log_d("templateParam->templateStatus = %d\r\n",templateParam->templateStatus);      
+    DBG("templateParam->templateStatus = %d\r\n",templateParam->templateStatus);      
     
     json_item = cJSON_GetObjectItem(templateMap, "callingWay");
     strcpy((char *)templateParam->callingWay,json_item->valuestring);
@@ -219,14 +216,14 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
         callingWayNum-- ;  
     }       
 //    ef_set_env_blob("T_callingWay",templateParam->callingWay,strlen((const char*)templateParam->callingWay));     
-    log_d("templateParam->callingWay = %s\r\n",templateParam->callingWay);    
+    DBG("templateParam->callingWay = %s\r\n",templateParam->callingWay);    
 
     json_item = cJSON_GetObjectItem(templateMap, "offlineProcessing");
     templateParam->offlineProcessing = json_item->valueint;
 //    memset(tmpbuf,0x00,sizeof(tmpbuf));
 //    sprintf(tmpbuf,"%8d",templateParam->offlineProcessing);
 //    ef_set_env_blob("offlineStatus",tmpbuf,8);     
-    log_d("templateParam->offlineProcessing = %d\r\n",templateParam->offlineProcessing);     
+    DBG("templateParam->offlineProcessing = %d\r\n",templateParam->offlineProcessing);     
 
 
     json_item = cJSON_GetObjectItem(templateMap, "modeType");
@@ -254,7 +251,7 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
     }  
     
 //    ef_set_env_blob("modeType",templateParam->modeType,strlen((const char*)templateParam->modeType));     
-    log_d("templateParam->modeType = %s\r\n",templateParam->modeType);
+    DBG("templateParam->modeType = %s\r\n",templateParam->modeType);
 
     json_item = cJSON_GetObjectItem(templateMap, "peakCallingWay");
     strcpy((char *)templateParam->peakInfo[0].callingWay,json_item->valuestring);
@@ -281,57 +278,57 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
     }  
     
 //    ef_set_env_blob("peakCallingWay",templateParam->peakInfo[0].callingWay,strlen((const char *)templateParam->peakInfo[0].callingWay));
-    log_d("templateParam->peakInfo[0].callingWay = %s\r\n",templateParam->peakInfo[0].callingWay);
+    DBG("templateParam->peakInfo[0].callingWay = %s\r\n",templateParam->peakInfo[0].callingWay);
 
     json_item = cJSON_GetObjectItem(templateMap, "peakStartDate");
     strcpy((char *)templateParam->peakInfo[0].beginTime,json_item->valuestring);
 //    ef_set_env_blob("peakStartDate",templateParam->peakInfo[0].beginTime,strlen((const char*)templateParam->peakInfo[0].beginTime));
-    log_d("templateParam->peakInfo[0].beginTime = %s\r\n",templateParam->peakInfo[0].beginTime);
+    DBG("templateParam->peakInfo[0].beginTime = %s\r\n",templateParam->peakInfo[0].beginTime);
 
     json_item = cJSON_GetObjectItem(templateMap, "peakEndDate");
     strcpy((char *)templateParam->peakInfo[0].endTime,json_item->valuestring);
 //    ef_set_env_blob("peakEndDate",templateParam->peakInfo[0].endTime,strlen((const char*)templateParam->peakInfo[0].endTime));
-    log_d("templateParam->peakInfo[0].endTime = %s\r\n",templateParam->peakInfo[0].endTime);
+    DBG("templateParam->peakInfo[0].endTime = %s\r\n",templateParam->peakInfo[0].endTime);
 
     json_item = cJSON_GetObjectItem(templateMap, "peakHolidaysType");
     strcpy((char *)templateParam->peakInfo[0].outsideTimeMode,json_item->valuestring);
 //    ef_set_env_blob("peakHolidaysType",templateParam->peakInfo[0].outsideTimeMode,strlen((const char*)templateParam->peakInfo[0].outsideTimeMode));
-    log_d("templateParam->peakInfo[0].outsideTimeMode = %s\r\n",templateParam->peakInfo[0].outsideTimeMode);
+    DBG("templateParam->peakInfo[0].outsideTimeMode = %s\r\n",templateParam->peakInfo[0].outsideTimeMode);
 
     json_item = cJSON_GetObjectItem(templateMap, "peakHolidays");
     strcpy((char *)templateParam->peakInfo[0].outsideTimeData,json_item->valuestring);
 //    ef_set_env_blob("peakHolidays",templateParam->peakInfo[0].outsideTimeData,strlen((const char*)templateParam->peakInfo[0].outsideTimeData));
-    log_d("templateParam->peakInfo[0].outsideTimeData = %s\r\n",templateParam->peakInfo[0].outsideTimeData);    
+    DBG("templateParam->peakInfo[0].outsideTimeData = %s\r\n",templateParam->peakInfo[0].outsideTimeData);    
 //------------------------------------------------------------------------------
     json_item = cJSON_GetObjectItem(templateMap, "holidayCallingWay");
     strcpy((char *)templateParam->hoildayInfo[0].callingWay,json_item->valuestring);
 //    ef_set_env_blob("holidayCallingWay",templateParam->hoildayInfo[0].callingWay,strlen((const char*)templateParam->hoildayInfo[0].callingWay));
-    log_d("templateParam->hoildayInfo[0].callingWay = %s\r\n",templateParam->hoildayInfo[0].callingWay);
+    DBG("templateParam->hoildayInfo[0].callingWay = %s\r\n",templateParam->hoildayInfo[0].callingWay);
 
     json_item = cJSON_GetObjectItem(templateMap, "holidayStartDate");
     strcpy((char *)templateParam->hoildayInfo[0].beginTime,json_item->valuestring);
 //    ef_set_env_blob("holidayStartDate",templateParam->hoildayInfo[0].beginTime,strlen((const char*)templateParam->hoildayInfo[0].beginTime));
-    log_d("templateParam->hoildayInfo[0].beginTime = %s\r\n",templateParam->hoildayInfo[0].beginTime);
+    DBG("templateParam->hoildayInfo[0].beginTime = %s\r\n",templateParam->hoildayInfo[0].beginTime);
 
     json_item = cJSON_GetObjectItem(templateMap, "holidayEndDate");
     strcpy((char *)templateParam->hoildayInfo[0].endTime,json_item->valuestring);
 //    ef_set_env_blob("holidayEndDate",templateParam->hoildayInfo[0].endTime,strlen((const char*)templateParam->hoildayInfo[0].endTime));
-    log_d("templateParam->hoildayInfo[0].endTime = %s\r\n",templateParam->hoildayInfo[0].endTime);
+    DBG("templateParam->hoildayInfo[0].endTime = %s\r\n",templateParam->hoildayInfo[0].endTime);
 
     json_item = cJSON_GetObjectItem(templateMap, "holidayHolidaysType");
     strcpy((char *)templateParam->hoildayInfo[0].outsideTimeMode,json_item->valuestring);
 //    ef_set_env_blob("holidayHolidaysType",templateParam->hoildayInfo[0].outsideTimeMode,strlen((const char*)templateParam->hoildayInfo[0].outsideTimeMode));
-    log_d("templateParam->hoildayInfo[0].outsideTimeMode = %s\r\n",templateParam->hoildayInfo[0].outsideTimeMode);
+    DBG("templateParam->hoildayInfo[0].outsideTimeMode = %s\r\n",templateParam->hoildayInfo[0].outsideTimeMode);
 
     json_item = cJSON_GetObjectItem(templateMap, "holidayHolidays");
     strcpy((char *)templateParam->hoildayInfo[0].outsideTimeData,json_item->valuestring);
 //    ef_set_env_blob("holidayHolidays",templateParam->hoildayInfo[0].outsideTimeData,strlen((const char*)templateParam->hoildayInfo[0].outsideTimeData));
-    log_d("templateParam->hoildayInfo[0].outsideTimeData = %s\r\n",templateParam->hoildayInfo[0].outsideTimeData);       
+    DBG("templateParam->hoildayInfo[0].outsideTimeData = %s\r\n",templateParam->hoildayInfo[0].outsideTimeData);       
 
 //--------------------------------------------------
     //存储hoildayTimeMap中数据
     holidayTimeMapCnt = cJSON_GetArraySize(holidayTimeMap); /*获取数组长度*/
-    log_d("array len = %d\r\n",holidayTimeMapCnt);
+    DBG("array len = %d\r\n",holidayTimeMapCnt);
 
 //    //存储不受控时间段的个数
 //    if(holidayTimeMapCnt > 0)
@@ -349,15 +346,15 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
         
         arrayElement = cJSON_GetObjectItem(tmpArray, "templateType");
         templateParam->holidayMode[index].templateType = arrayElement->valueint;        
-        log_d("templateType = %d\r\n",templateParam->holidayMode[index].templateType);
+        DBG("templateType = %d\r\n",templateParam->holidayMode[index].templateType);
 
         arrayElement = cJSON_GetObjectItem(tmpArray, "voiceSize");
         templateParam->holidayMode[index].voiceSize = arrayElement->valueint;        
-        log_d("voiceSize = %d\r\n",templateParam->holidayMode[index].voiceSize);
+        DBG("voiceSize = %d\r\n",templateParam->holidayMode[index].voiceSize);
         
         arrayElement = cJSON_GetObjectItem(tmpArray, "modeType");
         templateParam->holidayMode[index].channelType = arrayElement->valueint;
-        log_d("modeType = %d\r\n",templateParam->holidayMode[index].channelType);
+        DBG("modeType = %d\r\n",templateParam->holidayMode[index].channelType);
         
         arrayElement = cJSON_GetObjectItem(tmpArray, "startTime");
         
@@ -368,7 +365,7 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
         strcpy(tmpKey,"hoildayModeStartTime");
         strcat(tmpKey,tmpIndex); 
 //        ef_set_env_blob(tmpKey,templateParam->holidayMode[index].startTime,strlen((const char*)templateParam->holidayMode[index].startTime));        
-        log_d("%s = %s\r\n",tmpKey,templateParam->holidayMode[index].startTime);
+        DBG("%s = %s\r\n",tmpKey,templateParam->holidayMode[index].startTime);
         
         
         arrayElement = cJSON_GetObjectItem(tmpArray, "endTime");
@@ -378,13 +375,13 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
         strcpy(tmpKey,"hoildayModeEndTime");
         strcat(tmpKey,tmpIndex);      
 //        ef_set_env_blob(tmpKey,templateParam->holidayMode[index].endTime,strlen((const char*)templateParam->holidayMode[index].endTime));                
-        log_d("%s= %s\r\n",tmpKey,templateParam->holidayMode[index].endTime);        
+        DBG("%s= %s\r\n",tmpKey,templateParam->holidayMode[index].endTime);        
     }
     
-    log_d("=====================================================\r\n");
+    DBG("=====================================================\r\n");
 //--------------------------------------------------
     peakTimeMapCnt = cJSON_GetArraySize(peakTimeMap); /*获取数组长度*/
-    log_d("peakTimeMapCnt len = %d\r\n",peakTimeMapCnt);
+    DBG("peakTimeMapCnt len = %d\r\n",peakTimeMapCnt);
 
     for(index=0; index<peakTimeMapCnt; index++)
     {
@@ -395,15 +392,15 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
         
         arrayElement = cJSON_GetObjectItem(tmpArray, "templateType");
         templateParam->peakMode[index].templateType = arrayElement->valueint;        
-        log_d("templateType = %d\r\n",templateParam->holidayMode[index].templateType);
+        DBG("templateType = %d\r\n",templateParam->holidayMode[index].templateType);
 
         arrayElement = cJSON_GetObjectItem(tmpArray, "voiceSize");
         templateParam->peakMode[index].voiceSize = arrayElement->valueint;        
-        log_d("voiceSize = %d\r\n",templateParam->holidayMode[index].voiceSize);
+        DBG("voiceSize = %d\r\n",templateParam->holidayMode[index].voiceSize);
         
         arrayElement = cJSON_GetObjectItem(tmpArray, "modeType");
         templateParam->peakMode[index].channelType = arrayElement->valueint;
-        log_d("modeType = %d\r\n",templateParam->holidayMode[index].channelType);
+        DBG("modeType = %d\r\n",templateParam->holidayMode[index].channelType);
         
         arrayElement = cJSON_GetObjectItem(tmpArray, "startTime");
         
@@ -412,7 +409,7 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
         sprintf(tmpIndex,"%d",index);
         strcpy(tmpKey,"hoildayModeStartTime");
         strcat(tmpKey,tmpIndex); 
-        log_d("%s = %s\r\n",tmpKey,templateParam->peakMode[index].startTime);
+        DBG("%s = %s\r\n",tmpKey,templateParam->peakMode[index].startTime);
         
         
         arrayElement = cJSON_GetObjectItem(tmpArray, "endTime");
@@ -421,14 +418,14 @@ SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff)
         memset(tmpKey,0x00,sizeof(tmpKey));
         strcpy(tmpKey,"hoildayModeEndTime");
         strcat(tmpKey,tmpIndex);      
-        log_d("%s= %s\r\n",tmpKey,templateParam->peakMode[index].endTime);        
+        DBG("%s= %s\r\n",tmpKey,templateParam->peakMode[index].endTime);        
         
     }
     
     cJSON_Delete(root);
     
     ret = optTemplateParam(templateParam,WRITE_PRARM,sizeof(TEMPLATE_PARAM_STRU),DEVICE_TEMPLATE_PARAM_ADDR); 
-    log_d("saveTemplateParam took %d ms to save\r\n",xTaskGetTickCount()-curtick);
+    DBG("saveTemplateParam took %d ms to save\r\n",xTaskGetTickCount()-curtick);
 
     if(ret != NO_ERR)
     {
@@ -448,11 +445,12 @@ void initTemplateParam(void)
 
     if(ret == false)
     {
-        log_e("read param error\r\n");
+        DBG("read param error\r\n");
         return;
     }
 
-
+    DBG("gtemplateParam.initFlag.iFlag = %x\r\n",gtemplateParam.initFlag.iFlag);
+    
 	if(gtemplateParam.initFlag.iFlag != DEFAULT_INIVAL)
 	{	    
         //模板数据赋值
@@ -469,11 +467,11 @@ void initTemplateParam(void)
         ret = opParam(&gtemplateParam,WRITE_PRARM,sizeof(TEMPLATE_PARAM_STRU),DEVICE_TEMPLATE_PARAM_ADDR);
         if(ret == false)
         {
-            log_e("read param error\r\n");
+            DBG("read param error\r\n");
             return;            
         }
 	}  
-	log_d("init param success\r\n");
+	DBG("init Template Param success\r\n");
 }
 
 static uint8_t opParam(void *Param,uint8_t mode,uint32_t len,uint32_t addr)
@@ -484,7 +482,7 @@ static uint8_t opParam(void *Param,uint8_t mode,uint32_t len,uint32_t addr)
 
     if(buff == NULL)
     {
-        log_e("malloc memery error\r\n");
+        DBG("malloc memery error\r\n");
         myfree(SRAMIN,buff);
         return false;
     }     
@@ -493,40 +491,20 @@ static uint8_t opParam(void *Param,uint8_t mode,uint32_t len,uint32_t addr)
     {
         memcpy(buff,Param,len);   
         
-//    	ret = FRAM_Write ( FM24V10_1, addr, buff,len );
-//    	if ( ret == 0 )
-//    	{
-//            log_e("write template param error\r\n");
-//            myfree(SRAMIN,buff);
-//            return ret;
-//    	} 
+        bsp_MRAM_BufferWrite(buff, addr, len);
 
-        SPI_FLASH_BufferWrite(buff, addr, len);
-
-    	log_d("write param success\r\n");
+    	DBG("write param success\r\n");
 	}
 	else
-	{
-//        ret = FRAM_Read (FM24V10_1, addr, buff, len);
+	{        
+        bsp_MRAM_BufferRead(buff, addr, len);
         
-        SPI_FLASH_BufferRead(buff, addr, len);
-
-        
-//        if(ret != 1)
-//        {
-//            log_e("read param error\r\n");
-//            myfree(SRAMIN,buff);
-//            return ret ;        
-//        }	
-
         memcpy (Param, buff,  len );  
-        log_d("read param success\r\n");        
-	}
-	
+        DBG("read param success\r\n");        
+	}	
 
 	myfree(SRAMIN,buff);
-
-
+	
 	return ret;
 }
 
@@ -560,23 +538,51 @@ void initDevBaseParam(void)
 
     if(ret == false)
     {
-        log_e("read param error\r\n");
+        DBG("read param error\r\n");
         return;
     }
 
-    log_d("gDevBaseParam.deviceCode.downLoadFlag.iFlag = %x\r\n",gDevBaseParam.deviceCode.downLoadFlag.iFlag);
+    DBG("gDevBaseParam.deviceCode.downLoadFlag.iFlag = %x\r\n",gDevBaseParam.deviceCode.downLoadFlag.iFlag);
 
     if(gDevBaseParam.deviceCode.downLoadFlag.iFlag != DEFAULT_INIVAL)
 	{	
-	    log_d("wirte default base data\r\n");
+	    DBG("wirte default base data\r\n");
 	    ClearDevBaseParam();    
+
+	    //设备工作模式
+	    gDevBaseParam.progamMode = PROGRAMMODE_DOOR;
+
+	    //门禁类型
+	    gDevBaseParam.doorType = DOOR_TYPE_ONE;
+
+	    //读卡器类型
+	    gDevBaseParam.cardReaderType = CARD_READER_RS485;
 	    
         //设备状态为启用状态
-        gDevBaseParam.deviceState.iFlag = DEVICE_ENABLE;     
-
+        gDevBaseParam.deviceState.iFlag = DEVICE_ENABLE;  
+        
+        gDevBaseParam.deviceCode.downLoadFlag.iFlag = DEFAULT_INIVAL;  
+        
         calcMac ( (unsigned char*)mac);
         bcd2asc ( (unsigned char*)asc, (unsigned char*)mac, 12, 0 );
         Insertchar ( asc,temp,':' );
+
+        gDevBaseParam.localIP.ipMode.iMode = DHCP_IP;
+        
+        gDevBaseParam.localIP.ip[0] = 192;
+        gDevBaseParam.localIP.ip[1] = 168;
+        gDevBaseParam.localIP.ip[2] = 0;
+        gDevBaseParam.localIP.ip[3] = 176;
+        
+        gDevBaseParam.localIP.netMask[0] = 255;
+        gDevBaseParam.localIP.netMask[1] = 255;
+        gDevBaseParam.localIP.netMask[2] = 255;        
+        gDevBaseParam.localIP.netMask[3] = 0; 
+        
+        gDevBaseParam.localIP.gateWay[0] = 192;
+        gDevBaseParam.localIP.gateWay[1] = 168;
+        gDevBaseParam.localIP.gateWay[2] = 0;
+        gDevBaseParam.localIP.gateWay[3] = 1;
 
 //        strcpy(temp,"00:00:00:58:36:39");
 //        gDevBaseParam.deviceCode.deviceSnLen = strlen ( temp );
@@ -586,27 +592,30 @@ void initDevBaseParam(void)
         strcpy ( gDevBaseParam.mqttTopic.publish,DEV_FACTORY_PUBLISH );
         strcpy ( gDevBaseParam.mqttTopic.subscribe,DEV_FACTORY_SUBSCRIBE );
         strncat ( gDevBaseParam.mqttTopic.subscribe,gDevBaseParam.deviceCode.deviceSn,gDevBaseParam.deviceCode.deviceSnLen);
-        memcpy ( gDevBaseParam.deviceCode.qrSn,asc,8); //使用前8位做为本机的SN
+        memcpy ( gDevBaseParam.deviceCode.qrSn,asc+4,8); //使用后8位做为本机的SN
 
-        log_d("gDevBaseParam.deviceCode.deviceSn = %s,len = %d\r\n",gDevBaseParam.deviceCode.deviceSn,gDevBaseParam.deviceCode.deviceSnLen);
-        log_d("gDevBaseParam.mqttTopic.publish = %s\r\n",gDevBaseParam.mqttTopic.publish);
-        log_d("gDevBaseParam.mqttTopic.subscribe = %s\r\n",gDevBaseParam.mqttTopic.subscribe);       
-        log_d("gDevBaseParam.deviceCode.qrSn = %s\r\n",gDevBaseParam.deviceCode.qrSn);
+        DBG("gDevBaseParam.deviceCode.deviceSn = %s,len = %d\r\n",gDevBaseParam.deviceCode.deviceSn,gDevBaseParam.deviceCode.deviceSnLen);
+        DBG("gDevBaseParam.mqttTopic.publish = %s\r\n",gDevBaseParam.mqttTopic.publish);
+        DBG("gDevBaseParam.mqttTopic.subscribe = %s\r\n",gDevBaseParam.mqttTopic.subscribe);       
+        DBG("gDevBaseParam.deviceCode.qrSn = %s\r\n",gDevBaseParam.deviceCode.qrSn);
+        DBG("initDevBaseParam gDevBaseParam.localIP.ipMode.iMode = %x\r\n",gDevBaseParam.localIP.ipMode.iMode);
+        DBG("2 gDevBaseParam.deviceCode.downLoadFlag.iFlag = %x\r\n",gDevBaseParam.deviceCode.downLoadFlag.iFlag);
 
-
-
-        log_d("wirte default base data\r\n");
 
         ret = opParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
         
         if(ret == false)
         {
-            log_e("read param error\r\n");
+            DBG("read param error\r\n");
             return;            
         }
+
+
+        //重置索引值
+        eraseUserDataIndex();
 	}  
 	
-	log_d("init param success\r\n"); 
+	DBG("init  DevBase Param success\r\n"); 
 }
 
 
@@ -615,73 +624,109 @@ uint8_t optDevBaseParam(void *stParam,uint8_t mode,uint32_t len,uint32_t addr)
     return opParam(stParam,mode,len,addr); 
 }
 
-void initRecordIndex(void)
+//=0 失败, =1 成功
+uint8_t setLocalIpAddr(uint8_t *ipAddr,uint8_t * netMask,uint8_t *gateWay)
 {
-    uint8_t ret = 1;    
-    
-    ClearRecordIndex();
-    ret = opParam(&gRecordIndex,READ_PRARM,sizeof(RECORDINDEX_STRU),RECORD_INDEX_ADDR);
+    uint8_t ret = 1; 
 
+    if(!ipAddr || !netMask || !gateWay)
+    {
+        return 0;
+    }
+    
+    ClearDevBaseParam();    
+    ret = opParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    gDevBaseParam.localIP.ipMode.iMode = STATIC_IP;    
+    
+    memcpy(gDevBaseParam.localIP.ip,ipAddr,4);
+    memcpy(gDevBaseParam.localIP.netMask,netMask,4);
+    memcpy(gDevBaseParam.localIP.gateWay,gateWay,4);    
+
+
+    ret = opParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+    DBG("setLocalIpAddr gDevBaseParam.localIP.ipMode.iMode = %x\r\n",gDevBaseParam.localIP.ipMode.iMode);
+    
     if(ret == false)
     {
-        log_e("read param error\r\n");
-        return;
-    }
+        DBG("read param error\r\n");
+        return 0;            
+    }  
 
-    log_d("gCurCardHeaderIndex = %d\r\n",gRecordIndex.cardNoIndex);
-    log_d("gDelCardHeaderIndex = %d\r\n",gRecordIndex.delCardNoIndex);
-  
-	log_d("init param success\r\n");
+    return 1;    
 }
 
+uint8_t resetLocalBaseParam(void)
+{
+    uint8_t ret = 1;
 
+    ClearDevBaseParam();    
+    ret = opParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+    
+    gDevBaseParam.deviceCode.downLoadFlag.iFlag = 0x00; 
+    
+    ret = opParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+    DBG("gDevBaseParam.deviceCode.downLoadFlag.iFlag = %x\r\n",gDevBaseParam.deviceCode.downLoadFlag.iFlag);
+    
+    if(ret == false)
+    {
+        DBG("read param error\r\n");
+        return 0;            
+    }  
+
+    return ret;
+}
+
+uint8_t resetLocalSn(void)
+{
+    char tmp[32] = {0};
+    uint8_t ret = 1;
+
+    calcMac((uint8_t*)tmp);
+
+    ClearDevBaseParam();    
+    ret = opParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    gDevBaseParam.deviceCode.downLoadFlag.iFlag = 0x00;
+    gDevBaseParam.deviceCode.deviceSnLen = strlen((const char*)tmp);
+    memset(gDevBaseParam.deviceCode.deviceSn,0x00,sizeof(gDevBaseParam.deviceCode.deviceSn));
+    memcpy(gDevBaseParam.deviceCode.deviceSn,tmp+4,gDevBaseParam.deviceCode.deviceSnLen);
+    
+    ret = opParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+    DBG("gDevBaseParam.deviceCode.deviceSn = %s\r\n",gDevBaseParam.deviceCode.deviceSn);
+    
+    if(ret == false)
+    {
+        DBG("read param error\r\n");
+        return 0;            
+    }  
+
+    return 1;
+}
 
 uint8_t optRecordIndex(RECORDINDEX_STRU *recoIndex,uint8_t mode)
 {
     uint8_t ret = 0;
 
-    char *buff = mymalloc(SRAMIN,sizeof(RECORDINDEX_STRU));
+    char buff[12] = {0};
 
-    if(buff == NULL)
-    {
-        log_e("malloc memery error\r\n");
-        myfree(SRAMIN,buff);
-        return false;
-    }     
+    memset(buff,0x00,sizeof(buff));
 
     if(mode == WRITE_PRARM)
     {
         memcpy(buff,recoIndex,sizeof(RECORDINDEX_STRU));   
 
-        log_d("write index %d,%d,%d\r\n",recoIndex->cardNoIndex,recoIndex->delCardNoIndex,recoIndex->accessRecoIndex);
-        
-//    	ret = FRAM_Write ( FM24V10_1, RECORD_INDEX_ADDR, buff,sizeof(RECORDINDEX_STRU) );
-//    	if ( ret == 0 )
-//    	{
-//            log_e("write template param error\r\n");
-//            myfree(SRAMIN,buff);
-//            return ret;
-//    	} 
-
-        SPI_FLASH_BufferWrite(buff, RECORD_INDEX_ADDR, sizeof(RECORDINDEX_STRU));
+        DBG("write index %d,%d,%d\r\n",recoIndex->cardNoIndex,recoIndex->delCardNoIndex,recoIndex->accessRecoIndex);
+        bsp_MRAM_BufferWrite(buff, RECORD_INDEX_ADDR, sizeof(RECORDINDEX_STRU));
 
 	}
 	else
 	{
-//        ret = FRAM_Read (FM24V10_1, RECORD_INDEX_ADDR, buff, sizeof(RECORDINDEX_STRU));
-//        if(ret != 1)
-//        {
-//            log_e("read param error\r\n");
-//            myfree(SRAMIN,buff);
-//            return ret ;        
-//        }	
-        SPI_FLASH_BufferRead(buff, RECORD_INDEX_ADDR, sizeof(RECORDINDEX_STRU));
+        bsp_MRAM_BufferRead(buff, RECORD_INDEX_ADDR, sizeof(RECORDINDEX_STRU));
 
         memcpy (recoIndex, buff,  sizeof(RECORDINDEX_STRU) );          
 	}
-
-	myfree(SRAMIN,buff);
-
+	
 	return ret;
 }
 
@@ -696,7 +741,7 @@ void ClearTemplateParam(void)
 {
 	memset(&gtemplateParam,'\0',sizeof(TEMPLATE_PARAM_STRU));
 
-	log_d("TEMPLATE_PARAM_STRU = %d\r\n",sizeof(TEMPLATE_PARAM_STRU));
+	DBG("TEMPLATE_PARAM_STRU = %d\r\n",sizeof(TEMPLATE_PARAM_STRU));
 }
 
 void ClearDevBaseParam(void)
@@ -706,8 +751,7 @@ void ClearDevBaseParam(void)
 
 void clearTemplateFRAM(void)
 {
-//    FRAM_Erase ( FM24V10_1,DEVICE_TEMPLATE_PARAM_ADDR,DEVICE_TEMPLATE_PARAM_SIZE);
-    SPI_FLASH_SectorErase(DEVICE_TEMPLATE_PARAM_ADDR,DEVICE_TEMPLATE_PARAM_SIZE);
+    bsp_MRAM_SectorErase(DEVICE_TEMPLATE_PARAM_ADDR,DEVICE_TEMPLATE_PARAM_SIZE);
 }
 
 static void eraseUserDataIndex ( void )
@@ -729,14 +773,12 @@ void eraseUserDataAll ( void )
 	clearTemplateFRAM();
     initTemplateParam();	
 	iTime2 = xTaskGetTickCount();	/* 记下结束时间 */
-	log_d ( "eraseUserDataAll成功，耗时: %dms\r\n",iTime2 - iTime1 );
+	DBG ( "eraseUserDataAll成功，耗时: %dms\r\n",iTime2 - iTime1 );
 }
 
 void eraseHeadSector ( void )
-{
-//	FRAM_Erase ( FM24V10_1,0,122880 );	
-	
-    SPI_FLASH_SectorErase(0,122880);
+{	
+    bsp_MRAM_SectorErase(0,122880);
 }
 
 void eraseDataSector ( void )
@@ -747,17 +789,33 @@ void eraseDataSector ( void )
 	ClearRecordIndex();
     optRecordIndex(&gRecordIndex,READ_PRARM);
 
-    num = gRecordIndex.accessRecoIndex * RECORD_MAX_LEN/SECTOR_SIZE + 1;
+    num = gRecordIndex.accessRecoIndex * RECORD_MAX_LEN/CARD_SECTOR_SIZE + 1;
 
 	for ( i=0; i<num; i++ )
 	{
-		bsp_sf_EraseSector ( ACCESS_RECORD_ADDR+i*SECTOR_SIZE );
+		bsp_sf_EraseSector ( ACCESS_RECORD_ADDR+i*CARD_SECTOR_SIZE );
 	}
 
     gRecordIndex.accessRecoIndex = 0;
     
     optRecordIndex(&gRecordIndex,WRITE_PRARM);	
 }
+
+void initDevParam(void)
+{
+    //读取本地时间
+    DBG("bsp_ds1302_readtime= %s\r\n",bsp_ds1302_readtime());
+
+    //读取模板数据
+//    eraseUserDataAll();
+
+    initDevBaseParam();
+
+    initTemplateParam();   
+
+//    DisplayDevInfo();  
+}
+
 
 void TestFlash ( uint8_t mode )
 {
@@ -766,9 +824,6 @@ void TestFlash ( uint8_t mode )
 	uint32_t addr = 0;
 	uint16_t i = 0;
 	uint32_t num = 0;
-
-
-
 	
 	ClearRecordIndex();
     optRecordIndex(&gRecordIndex,READ_PRARM);
@@ -786,16 +841,16 @@ void TestFlash ( uint8_t mode )
 	}
 
 	
-    log_d("&&&&& the total sn = %d\r\n\r\n",num);
+    DBG("&&&&& the total sn = %d\r\n\r\n",num);
 
 	for ( i=0; i<num; i++ )
 	{
         memset ( &tmp,0x00,sizeof ( HEADINFO_STRU ) );
 		memset ( buff,0x00,sizeof ( buff ) );		
 		
-        SPI_FLASH_BufferRead(&tmp, addr+i*sizeof ( HEADINFO_STRU ), sizeof(HEADINFO_STRU));		
+        bsp_MRAM_BufferRead(&tmp, addr+i*sizeof ( HEADINFO_STRU ), sizeof(HEADINFO_STRU));		
 
-		log_e("card%d = %x,sn = %02x,%02x,%02x,%02x\r\n ",i,tmp.headData.id,tmp.headData.sn[0],tmp.headData.sn[1],tmp.headData.sn[2],tmp.headData.sn[3]);
+		DBG("card%d = %x,sn = %02x,%02x,%02x,%02x\r\n ",i,tmp.headData.id,tmp.headData.sn[0],tmp.headData.sn[1],tmp.headData.sn[2],tmp.headData.sn[3]);
 	}
 
 //	for ( i=0; i<num; i++ )
@@ -808,21 +863,129 @@ void TestFlash ( uint8_t mode )
 //	}
 
 }
+void setProgramMode(PROGRAM_MODE mode)
+{
+    uint8_t ret = 1; 
 
-//void setCardSortFlag(uint8_t mode)
-//{
-//    ClearRecordIndex();
-//    optRecordIndex(&gRecordIndex,READ_PRARM);
-//    if(mode == CARD_UNORDERED)
-//    {
-//        gRecordIndex.sortFlag.iFlag = CARD_UNORDERED;
-//    }
-//    else
-//    {
-//        gRecordIndex.sortFlag.iFlag = CARD_UNORDERED;        
-//    }
-//    optRecordIndex(&gRecordIndex,WRITE_PRARM);
-//}
+    ClearDevBaseParam();
+    
+    ret = opParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    if(ret == false)
+    {
+        DBG("read param error\r\n");
+        return;
+    }
+
+    gDevBaseParam.progamMode = mode;
+    
+    ret = opParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+    
+    if(ret == false)
+    {
+        DBG("write param error\r\n");
+        return;            
+    }
+}
+
+
+void setCardReaderType(CARD_READER_TYPE type)
+{
+    uint8_t ret = 1; 
+
+    ClearDevBaseParam();
+    
+    ret = opParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    if(ret == false)
+    {
+        DBG("read param error\r\n");
+        return;
+    }
+
+    gDevBaseParam.cardReaderType = type;
+    
+    ret = opParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+    
+    if(ret == false)
+    {
+        DBG("write param error\r\n");
+        return;            
+    }
+
+}
+void setDoorType(DOOR_TYPE type)
+{
+    uint8_t ret = 1; 
+
+    ClearDevBaseParam();
+    
+    ret = opParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    if(ret == false)
+    {
+        DBG("read param error\r\n");
+        return;
+    }
+
+    gDevBaseParam.doorType = type;
+    
+    ret = opParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+    
+    if(ret == false)
+    {
+        DBG("write param error\r\n");
+    }   
+}
+
+PROGRAM_MODE getProgramMode()
+{
+    uint8_t ret = 1; 
+
+    ClearDevBaseParam();
+    
+    ret = opParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    if(ret == false)
+    {
+        DBG("read param error\r\n");      
+    }
+    
+    return gDevBaseParam.progamMode;
+}
+CARD_READER_TYPE getCardReaderType()
+{
+    uint8_t ret = 1; 
+
+    ClearDevBaseParam();
+    
+    ret = opParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    if(ret == false)
+    {
+        DBG("read param error\r\n");      
+    }
+    
+    return gDevBaseParam.cardReaderType;
+}
+
+DOOR_TYPE getDoorType()
+{
+    uint8_t ret = 1; 
+
+    ClearDevBaseParam();
+    
+    ret = opParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    if(ret == false)
+    {
+        DBG("read param error\r\n");       
+    }
+    
+    return gDevBaseParam.doorType;
+}
+
+
 
 
 

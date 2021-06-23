@@ -1,6 +1,8 @@
 #ifndef __LWIPOPTS_H__
 #define __LWIPOPTS_H__
 
+#include "deviceInfo.h"
+
 //线程优先级
 #ifndef TCPIP_THREAD_PRIO
 #define TCPIP_THREAD_PRIO		5	//定义内核任务的优先级为5

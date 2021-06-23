@@ -24,15 +24,18 @@
 #define LOG_TAG    "BarCode"
 #include "elog.h"
 
-
+#include "stdio.h"
 #include "bsp_uart_fifo.h"
 #include "rs485Reader_Task.h"
+#include "CmdHandle.h"
+#include "bsp_beep.h"
+
 
 /*----------------------------------------------*
  * 宏定义                                       *
  *----------------------------------------------*/
  
-#define RS485READER_TASK_PRIO		(tskIDLE_PRIORITY + 7)
+#define RS485READER_TASK_PRIO		(tskIDLE_PRIORITY + 1)
 #define RS485READER_STK_SIZE 		(configMINIMAL_STACK_SIZE*4)
 
 
@@ -53,6 +56,13 @@ typedef struct FROMREADER
     uint8_t rxStatus;                   //接收状态
     uint16_t rxCnt;                     //接收字节数
 }FROMREADER_STRU;
+
+typedef union
+{
+	uint32_t id;        //卡号
+	uint8_t sn[4];    //卡号按字符
+}CARD_TYPE;
+
 
 static FROMREADER_STRU gReaderData;
 
@@ -80,27 +90,54 @@ void CreateRs485ReaderTask(void)
                 (TaskHandle_t*  )&xHandleTaskRs485Reader);
 }
 
-
 static void vTaskRs485Reader(void *pvParameters)
 { 
         uint8_t sendBuff[512] = {0};
         uint16_t len = 0; 
-        uint8_t relieveControl[38] = {0};        
-
+        CARD_TYPE cardDev1;
+        READER_BUFF_STRU *ptReaderBuf = &gReaderMsg;     
+        uint32_t tmpID = 0;
         while(1)
         { 
-            memset(sendBuff,0x00,sizeof(sendBuff));
-        
+            memset(sendBuff,0x00,sizeof(sendBuff));            
             if(parseReader() == FINISHED)
             {
                 len = gReaderData.rxCnt;
                 memcpy(sendBuff,gReaderData.rxBuff,len);        
                 memset(&gReaderData,0x00,sizeof(FROMREADER_STRU));
 
-                log_d("gReaderData.rxBuff =%s,len=%d\r\n",sendBuff,len);
+                log_d("recv buff = %s,len = %d\r\n",sendBuff,len);
+                if(len == 10)
+                {
+                    sscanf((const char*)sendBuff,"%8x",&tmpID);
+                    
+                    /* 清零 */
+                    ptReaderBuf->devID = 0; 
+                    ptReaderBuf->mode = 0;
+                    memset(ptReaderBuf->cardID,0x00,sizeof(ptReaderBuf->cardID));  
+                    Sound2(50);
 
-                dbh("gReaderData.rxBuff", sendBuff,  len);
+                    cardDev1.id = tmpID;
+                    ptReaderBuf->devID = READER1; 
+                    ptReaderBuf->mode = READMODE;
+                    memcpy(ptReaderBuf->cardID,cardDev1.sn,sizeof(cardDev1.sn));   
+
+
+                    /* 使用消息队列实现指针变量的传递 */
+                    if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+                               (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+                               (TickType_t)10) != pdPASS )
+                    {
+                    //                xQueueReset(xCardIDQueue); 删除该句，为了防止在下发数据的时候刷卡
+                      log_d("send card1  queue is error!\r\n"); 
+                      //发送卡号失败蜂鸣器提示
+                      //或者是队列满                
+                    }
+                }
             }
+            
+        	/* 发送事件标志，表示任务正常运行 */        
+        	xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_2);   
 
             vTaskDelay(200); 
         }

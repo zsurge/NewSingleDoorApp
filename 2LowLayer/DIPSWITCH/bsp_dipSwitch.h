@@ -30,33 +30,31 @@
  * 宏定义                                       *
  *----------------------------------------------*/
 /* 拨码开关对应的RCC时钟 */
-#define RCC_ALL_DIPSWITCH     RCC_AHB1Periph_GPIOG     
+#define RCC_ALL_DIPSWITCH     RCC_AHB1Periph_GPIOF     
 
-#define GPIO_PORT_DIPSWITCH       GPIOG
+#define GPIO_PORT_DIPSWITCH       GPIOF
 
      
-#define GPIO_PIN_DIP0       GPIO_Pin_7
-#define GPIO_PIN_DIP1       GPIO_Pin_6
-#define GPIO_PIN_DIP2       GPIO_Pin_5
-#define GPIO_PIN_DIP3       GPIO_Pin_4
+#define GPIO_PIN_DIP0       GPIO_Pin_2
+#define GPIO_PIN_DIP1       GPIO_Pin_3
+#define GPIO_PIN_DIP2       GPIO_Pin_4
+#define GPIO_PIN_DIP3       GPIO_Pin_5
 
 
 #define GPIO_PIN_SW1       GPIO_Pin_2
 #define GPIO_PIN_SW2       GPIO_Pin_15
 
+//丝印反了，通过软件给调整正确
+//#define DIP0      PFin(2)   	
+//#define DIP1 		PFin(3)		
+//#define DIP2 		PFin(4)		
+//#define DIP3		PFin(5)		
 
-#define DIP0        PGin(7)   	
-#define DIP1 		PGin(6)		
-#define DIP2 		PGin(5)		
-#define DIP3		PGin(4)		
+#define DIP3        PFin(2)   	
+#define DIP2 		PFin(3)		
+#define DIP1 		PFin(4)		
+#define DIP0		PFin(5)		
 
-
-
-//#define SW2_LOW()	    GPIOG->BSRRL = GPIO_Pin_2
-//#define SW2_HI()	    GPIOG->BSRRH = GPIO_Pin_2
-
-//#define SW1_LOW()	    GPIOD->BSRRL = GPIO_Pin_15
-//#define SW1_HI()	    GPIOD->BSRRH = GPIO_Pin_15
 
 #define SW2_LOW()	    GPIO_ResetBits(GPIOG, GPIO_Pin_2)
 #define SW2_HI()	    GPIO_SetBits(GPIOG, GPIO_Pin_2)

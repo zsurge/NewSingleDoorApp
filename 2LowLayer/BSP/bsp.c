@@ -54,19 +54,20 @@ static void my_mem_init(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);//设置系统中断优先级分组4
 	delay_init(168);            //初始化延时函数
 
+    bsp_dipswitch_init();
+    
 	bsp_TIM6_Init();            //定时器6初始化
 	
     bsp_InitUart();
 
     bsp_ds1302_init();            //时钟芯片初始化    
-
-//	bsp_key_Init();             //按键初始化
-	bsp_LED_Init();		        //初始化LED端口	  
-
     
-    sFLASH_Init();           //MR25
+	bsp_LED_Init();		        //初始化LED端口	  
+	
+    bsp_MRAM_Init();           //MR25
     
     STM_FLASH_Init();           //芯片内部FLASH初始化
+    
     easyflash_init();           //外部FLASH初始化，使用easyflash       
     
     bsp_beep_init();            //蜂鸣器初始化
@@ -75,8 +76,15 @@ static void my_mem_init(void)
 
     bsp_sw_init();
 
-    my_mem_init();                  //对内存进行初始化
 
+    my_mem_init();                  //对内存进行初始化  
+
+    DBG("bit 0 = %d,bit 1 = %d,bit 2 = %d,bit 3 = %d\r\n",DIP0,DIP1,DIP2,DIP3);
+
+    
+    initDevParam();
+
+    
   /* CmBacktrace initialize */
 //   cm_backtrace_init("SingleDoorApp", HARDWARE_VERSION, SOFTWARE_VERSION);
 

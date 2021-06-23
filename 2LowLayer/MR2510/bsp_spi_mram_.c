@@ -1,7 +1,7 @@
 
 
 /* Includes ------------------------------------------------------------------*/
-#include "spi_flash.h"
+#include "bsp_spi_mram.h"
 
 #define SPI_FLASH_PageSize              256
 #define SPI_FLASH_PerWritePageSize      256
@@ -901,3 +901,4 @@ void SPI_FLASH_BulkErase(void)
 
 #endif /* #if 0 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+

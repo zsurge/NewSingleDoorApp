@@ -36,14 +36,12 @@
 #include "lwip/netif.h"
 #include "lwipopts.h"
 #include "cm_backtrace.h"
-
-
+#include "ini.h"
 
 
 //驱动层头文件
 #include "bsp_uart_fifo.h"
 #include "LAN8720.h"
-#include "bsp_key.h"
 #include "bsp_time.h"
 #include "bsp_led.h"
 #include "bsp_beep.h" 
@@ -52,7 +50,8 @@
 
 #include "bsp_usart5.h"
 
-#include "bsp_flash.h"
+#include "bsp_spi_mram.h"
+
 
 
 //#include "bsp_digitaltube.h"
@@ -65,8 +64,8 @@
 #include "bsp_ds1302.h"
 //#include "bsp_24cxx.h"
 //#include "bsp_i2c.h"
-#include "bsp_MB85RC128.h"
-#include "spi_flash.h"
+
+
 //#include "24cxx.h"
 
 

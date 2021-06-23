@@ -29,9 +29,21 @@
 #include "semphr.h"
 #include "event_groups.h"
 
+
 /*----------------------------------------------*
  * 宏定义                                       *
  *----------------------------------------------*/
+
+//使用拨码开关来区分工作模式
+//bit1	ON: 通道          OFF: 门禁
+//bit2	ON: 二门门禁	    OFF:一门门禁
+//bit3	ON: 测试模式	    OFF：工作模式
+//bit4	ON: 485读卡器	    OFF:韦根读卡器
+
+
+
+
+ 
 #define  QUEUE_LEN    10     /* 队列的长度，最大可包含多少个消息 */
 #define  QUEUE_SIZE   4      /* 队列的中每个消息的大小*/
 
@@ -55,18 +67,19 @@
 #define TASK_BIT_4	 (1 << 4)
     
     
-#define TASK_BIT_ALL ( TASK_BIT_0 | TASK_BIT_1| TASK_BIT_2)
+#define TASK_BIT_ALL ( TASK_BIT_0 | TASK_BIT_1| TASK_BIT_2|TASK_BIT_3)
 
 /*----------------------------------------------*
  * 常量定义                                     *
  *----------------------------------------------*/
 
 #define MAX_CMD_LEN
-// typedef struct CMD_BUFF
-// {
-//    uint8_t cmd_len; 
-//    uint8_t cmd[32];
-// }CMD_BUFF_STRU;
+
+ typedef struct CMD_BUFF
+ {
+    uint8_t cmd_len; 
+    uint8_t cmd[32];
+ }CMD_BUFF_STRU;
 
 /*----------------------------------------------*
  * 模块级变量                                   *
@@ -78,7 +91,9 @@ extern QueueHandle_t xCmdQueue;
 extern QueueHandle_t xCardIDQueue; 
 
 
-//extern CMD_BUFF_STRU gCmd_buff;
+
+
+extern CMD_BUFF_STRU gCmd_buff;
 
 /*----------------------------------------------*
  * 内部函数原型说明                             *
