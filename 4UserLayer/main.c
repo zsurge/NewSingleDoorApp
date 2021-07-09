@@ -14,12 +14,16 @@
   1.日    期   : 2019年7月9日
     作    者   : 张舵
     修改内容   : 创建文件
+*****************************************************************************
+硬件资源分配：
+1.串口1 调试串口
+2.串口2 跟PC端通讯串口，调试使用；
+3.串口3 RS485 读卡器
+4.
 
-使用拨码开关来区分工作模式
-bit1	ON=0:门禁             OFF=1: 通道
-bit2	ON=0: 一门门禁	        OFF=1:二门门禁
-bit3	ON=0: 485读卡器	    OFF=1:韦根读卡器
-bit4	ON=0: 工作模式	        OFF=1：测试模式
+
+
+
 ******************************************************************************/
 
 
@@ -104,30 +108,36 @@ static void AppTaskCreate (void)
     //LED灯
     CreateLedTask();                //0 2
 
-    //跟控制板通讯
-
-    if(DIP0 == 1)
+    //跟控制板通讯    
+    if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
+    {
+        //门禁
+        CreateOpenDoorTask();       //1 8      
+    }
+    else if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
     {
         //通道闸
         CreateCommTask();           //1 8  
     }
     else
-    {   
-        //门禁
-        CreateOpenDoorTask();       //1 8          
-    }
-
+    {
+        CreateOpenDoorTask();       //1 8    
+    }    
 
     //读卡器
-    if(DIP2 == 1)
+    if(gDevBaseParam.cardReaderType == CARD_READER_WG)
     {
         //韦根读卡器
         CreateReaderTask();         //2   1    
     }
-    else
+    else if(gDevBaseParam.cardReaderType == CARD_READER_RS485)
     {    
         //RS485读卡器
         CreateRs485ReaderTask();     // 2 1    
+    }
+    else
+    {
+        CreateReaderTask();         //2   1    
     }
 
     //卡数据处理
@@ -138,7 +148,7 @@ static void AppTaskCreate (void)
     CreateMqttTask();               //4   5
 
     //看门狗 只要在工作模式下才启动
-    if(DIP3 == 0)
+    if(gDevBaseParam.progamMode != PROGRAMMODE_TEST)
     {
         CreateWatchDogTask();
     }
@@ -191,7 +201,7 @@ static void AppObjCreate (void)
     }
     
 
-    if(DIP0 == 0)
+    if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR || gDevBaseParam.progamMode == PROGRAMMODE_TEST)
     {
         xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
                                   (UBaseType_t ) QUEUE_SIZE);/* 消息的大小 */
@@ -200,7 +210,7 @@ static void AppObjCreate (void)
             App_Printf("create xCmdQueue error!\r\n");
         }
     }
-    else
+    else if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
     {
         xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
                                   (UBaseType_t ) sizeof(CMD_BUFF_STRU *));/* 消息的大小 */

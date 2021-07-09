@@ -402,11 +402,12 @@ uint32_t addCard(uint8_t *head,uint8_t mode)
 
 int delHead(uint8_t *headBuff,uint8_t mode)
 {
-	int nums = 0;
+	int ret = 0;
 	uint8_t multiple = 0;
 	uint16_t remainder = 0;
     HEADINFO_STRU tmpCard;
     uint32_t addr = CARD_NO_HEAD_ADDR;    
+    int num = 0;
 
     if ( headBuff == NULL )
 	{
@@ -414,16 +415,17 @@ int delHead(uint8_t *headBuff,uint8_t mode)
 	}	
 
     //1.查找要删除的卡号
-    nums = readHead(headBuff,CARD_MODE);
+    ret = readHead(headBuff,CARD_MODE);
 
-    if(nums == NO_FIND_HEAD)
+    if(ret == NO_FIND_HEAD)
     {
         return NO_FIND_HEAD;
     }
+    log_i("del find it,index = %d",ret);
 
     //2.计算要删除卡号的地址
-	multiple = nums / HEAD_NUM_SECTOR;
-	remainder = nums % HEAD_NUM_SECTOR;
+	multiple = ret / HEAD_NUM_SECTOR;
+	remainder = ret % HEAD_NUM_SECTOR;
 	
     addr += (multiple * HEAD_NUM_SECTOR + remainder)  * sizeof(HEADINFO_STRU);
 
@@ -438,16 +440,24 @@ int delHead(uint8_t *headBuff,uint8_t mode)
 
     //4.对这一页重新排序
     if(multiple >= 1)
-    {
-        addr += (multiple-1) * HEAD_NUM_SECTOR  * sizeof(HEADINFO_STRU);
-        nums = HEAD_NUM_SECTOR;
+    {          
+        if(remainder == 0)
+        {            
+            addr += (multiple-1) * HEAD_NUM_SECTOR  * sizeof(HEADINFO_STRU);
+        }
+        else
+        {
+            addr += multiple * HEAD_NUM_SECTOR  * sizeof(HEADINFO_STRU);
+        }
+
+        num = HEAD_NUM_SECTOR;
     }
     else
     {
-        addr = CARD_NO_HEAD_ADDR;
+        //这里因为总的卡数量小于1024，所以NUM取最大值
         ClearRecordIndex();
         optRecordIndex(&gRecordIndex,READ_PRARM);        
-        nums = gRecordIndex.cardNoIndex % HEAD_NUM_SECTOR;
+        num = gRecordIndex.cardNoIndex % HEAD_NUM_SECTOR;
     }
 
     
@@ -463,21 +473,21 @@ int delHead(uint8_t *headBuff,uint8_t mode)
 //    }
 
     memset(gSectorBuff,0x00,sizeof(gSectorBuff));    
-    bsp_MRAM_BufferRead(gSectorBuff, addr ,nums* sizeof(HEADINFO_STRU));            
+    bsp_MRAM_BufferRead(gSectorBuff, addr ,num* sizeof(HEADINFO_STRU));            
     //排序
-    qSortCard(gSectorBuff,nums);
+    sortHead(gSectorBuff,num);
     //写回数据
-    bsp_MRAM_BufferWrite(gSectorBuff, addr, nums* sizeof(HEADINFO_STRU));   
+    bsp_MRAM_BufferWrite(gSectorBuff, addr, num* sizeof(HEADINFO_STRU));   
 
     #ifdef DEBUG_PRINT
-    for(int i=0;i<nums;i++)
+    for(int i=0;i<num;i++)
     {
         log_d("del card id =%x\r\n",gSectorBuff[i].headData.id);
     }  
     #endif
     
 
-    log_d("qSortCard success\r\n");
+    log_d("del qSortCard success\r\n");
     
 
     return 1;

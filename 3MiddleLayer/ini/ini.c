@@ -566,6 +566,7 @@ void initDevBaseParam(void)
         calcMac ( (unsigned char*)mac);
         bcd2asc ( (unsigned char*)asc, (unsigned char*)mac, 12, 0 );
         Insertchar ( asc,temp,':' );
+        
 
         gDevBaseParam.localIP.ipMode.iMode = DHCP_IP;
         

@@ -51,7 +51,21 @@
 #define READ_IP     0x02
 #define SET_IP      0x03
 #define RESET_SN      0x04
-#define RESET_BASE_PARAM 0X05
+#define RESET_BASE_PARAM 0x05
+
+//添加设备程序模式，读卡器类型，门禁类型
+#define SET_PROGRAM_MODE 0x06
+#define SET_CARD_READER_TYPE 0x07
+#define SET_DOOR_TYPE 0x08
+
+//添加设备程序模式，读卡器类型，门禁类型
+#define GET_PROGRAM_MODE 0x09
+#define GET_CARD_READER_TYPE 0x0A
+#define GET_DOOR_TYPE 0x0B
+
+
+#define GET_CARD_NO 0x0C
+
 
 #define HEAD    0xA5
 #define TAIL    0x5A
@@ -103,6 +117,14 @@ static uint8_t retDefBuff(char *txBuf);
 static uint8_t resetSn(char *txBuf);
 static uint8_t resetBaseParam(char *txBuf);
 
+static uint8_t setDevMode(uint8_t cmd,char *src,uint8_t bufLen,char *txBuf);
+static uint8_t getDevMode(uint8_t cmd,char *txBuf);
+
+
+
+
+
+
 
 static void DisplayDevInfo(void);
 
@@ -144,7 +166,7 @@ static void vTaskLed(void *pvParameters)
     while(1)
     {  
          
-        if(i++ == 200)
+        if(i++ == 50)
         {
             LEDERROR = !LEDERROR; 
             i = 0;
@@ -181,12 +203,6 @@ static void showTask(void)
     printf("系统当前内存大小为 %d 字节，开始申请内存\r\n",g_memsize);      
 
 }
-
-
-
-
-
-
 
 void deal_pc_procotol(void)
 {
@@ -284,7 +300,32 @@ void deal_pc_data(void)
             case RESET_BASE_PARAM:
                  log_d("RESET BASE PARAM\r\n");
                  sendToHost(RESET_BASE_PARAM);           
-                 break;                     
+                 break;
+            case SET_PROGRAM_MODE:
+                 log_d("SET_PROGRAM_MODE\r\n");
+                 sendToHost(SET_PROGRAM_MODE);
+                 break;
+            case SET_CARD_READER_TYPE:
+                 log_d("SET_CARD_READER_TYPE\r\n");
+                 sendToHost(SET_CARD_READER_TYPE);            
+                 break;        
+            case SET_DOOR_TYPE:
+                 log_d("SET_DOOR_TYPE\r\n");
+                 sendToHost(SET_DOOR_TYPE);           
+                 break;
+            case GET_PROGRAM_MODE:
+                 log_d("GET_PROGRAM_MODE\r\n");
+                 sendToHost(GET_PROGRAM_MODE);
+                 break;
+            case GET_CARD_READER_TYPE:
+                 log_d("GET_CARD_READER_TYPE\r\n");
+                 sendToHost(GET_CARD_READER_TYPE);            
+                 break;        
+            case GET_DOOR_TYPE:
+                 log_d("GET_DOOR_TYPE\r\n");
+                 sendToHost(GET_DOOR_TYPE);           
+                 break;                  
+                 
             default:
                  break;                
         }                        
@@ -353,6 +394,55 @@ void sendToHost(char CMD)
              //4.重启
              NVIC_SystemReset();             
              break;
+
+       case SET_PROGRAM_MODE:
+            log_d("resp SET PROGRAM MODE\r\n");
+            len=0;
+            memset(sendBuff,0x00,sizeof(sendBuff));        
+            len = setDevMode(SET_PROGRAM_MODE,(char *)rxFromPc.rxBuff, rxFromPc.rxCnt,sendBuff);   
+            RS485_SendBuf(COM2,(uint8_t *)sendBuff,len); 
+            vTaskDelay(50); 
+            //4.重启
+            NVIC_SystemReset();       
+            break;
+       case SET_CARD_READER_TYPE:
+            log_d("resp SET_CARD_READER_TYPE\r\n");
+            len=0;
+            memset(sendBuff,0x00,sizeof(sendBuff));        
+            len = setDevMode(SET_CARD_READER_TYPE,(char *)rxFromPc.rxBuff, rxFromPc.rxCnt,sendBuff);   
+            RS485_SendBuf(COM2,(uint8_t *)sendBuff,len); 
+            vTaskDelay(50); 
+            //4.重启
+            NVIC_SystemReset();       
+            break;
+       case SET_DOOR_TYPE:
+            log_d("resp SET_DOOR_TYPE\r\n");
+            len=0;
+            memset(sendBuff,0x00,sizeof(sendBuff));        
+            len = setDevMode(SET_DOOR_TYPE,(char *)rxFromPc.rxBuff, rxFromPc.rxCnt,sendBuff);   
+            RS485_SendBuf(COM2,(uint8_t *)sendBuff,len); 
+            vTaskDelay(50); 
+            //4.重启
+            NVIC_SystemReset();       
+            break;        
+        case GET_PROGRAM_MODE:
+            log_d("resp GET_PROGRAM_MODE\r\n");
+            len=0;
+            memset(sendBuff,0x00,sizeof(sendBuff));
+            len = getDevMode(GET_PROGRAM_MODE,sendBuff);            
+            break;  
+        case GET_CARD_READER_TYPE:
+            log_d("resp GET_CARD_READER_TYPE\r\n");
+            len=0;
+            memset(sendBuff,0x00,sizeof(sendBuff));
+            len = getDevMode(GET_CARD_READER_TYPE,sendBuff);            
+            break;
+        case GET_DOOR_TYPE:
+            log_d("resp GET_DOOR_TYPE\r\n");
+            len=0;
+            memset(sendBuff,0x00,sizeof(sendBuff));
+            len = getDevMode(GET_DOOR_TYPE,sendBuff);            
+            break;  
         default:            
             break;
     }
@@ -362,6 +452,9 @@ void sendToHost(char CMD)
     RS485_SendBuf(COM2,(uint8_t *)sendBuff,len);    
     init_from_pc_buf();
 }
+
+
+
 
 static uint8_t retDefBuff(char *txBuf)
 {
@@ -414,7 +507,11 @@ static uint8_t readDevStatus(char *txBuf)
 
     memcpy(buf+i,gDevinfo.GetSn(),strlen((const char*)gDevinfo.GetSn()));
     i+= strlen((const char*)gDevinfo.GetSn());   
-    buf[i++] = '-';
+    buf[i++] = '-';    
+
+    memcpy(buf+i,gDevBaseParam.deviceCode.deviceSn,gDevBaseParam.deviceCode.deviceSnLen);
+    i+= gDevBaseParam.deviceCode.deviceSnLen;   
+    buf[i++] = '-';    
 
     memset(tmp,0x00,sizeof(tmp));
     sprintf(tmp,"%d",gRecordIndex.cardNoIndex);
@@ -423,32 +520,24 @@ static uint8_t readDevStatus(char *txBuf)
     i+= strlen((const char*)tmp);   
     buf[i++] = '-';
 
-    if(DIP0 == 1)
+    if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
     {     
-        memcpy(buf+i,"2",1);
+        memcpy(buf+i,"C",1);
+        i+= 1;   
+        buf[i++] = '-';    
+    }
+    else if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR) 
+    {
+        memcpy(buf+i,"D",1);
         i+= 1;   
         buf[i++] = '-';    
     }
     else
     {
-        memcpy(buf+i,"1",1);
+        memcpy(buf+i,"0",1);
         i+= 1;   
         buf[i++] = '-';    
     }
-
-    if(DIP3 == 1)
-    {     
-        memcpy(buf+i,"2",1);
-        i+= 1;   
- 
-    }
-    else
-    {
-        memcpy(buf+i,"1",1);
-        i+= 1;   
-
-    }   
-
     
     buf[i++] = TAIL;
     buf[1] = i>>8;   //high
@@ -589,4 +678,113 @@ static uint8_t resetBaseParam(char *txBuf)
   return i; 
 
 }
+
+
+
+static uint8_t setDevMode(uint8_t cmd,char *src,uint8_t bufLen,char *txBuf)
+{
+    char buf[128] = {0};
+    
+    uint8_t i = 0;
+    uint8_t crc = 0;
+    uint8_t tmpValue = 0;
+
+    i = 3;
+    buf[0] = HEAD;
+    buf[i++] = SET_PROGRAM_MODE;
+
+    if(!src || bufLen < 6)
+    {
+        buf[i++] = ERR;
+    }
+    else
+    {
+        buf[i++] = OK;
+    }   
+    
+    tmpValue = src[4];
+
+    log_d("setDevMode = %d\r\n",tmpValue);
+
+    if(cmd == SET_PROGRAM_MODE)
+    {
+        setProgramMode((PROGRAM_MODE)tmpValue);    
+        log_d("set Porgram Mode = %s\r\n",tmpValue); 
+    }
+    else if(cmd == SET_CARD_READER_TYPE)
+    {
+        setCardReaderType((CARD_READER_TYPE)tmpValue);    
+        log_d("set CARD_READER_TYPE = %s\r\n",tmpValue); 
+    }
+    else if(cmd == SET_DOOR_TYPE)
+    {
+        setDoorType((DOOR_TYPE) tmpValue);
+        log_d("set  DOOR_TYPE = %s\r\n",tmpValue); 
+    }   
+
+    
+    buf[i++] = TAIL;
+    
+    buf[1] = i>>8;   //high
+    buf[2] = i&0xFF; //low   
+    
+    crc = xorCRC((uint8_t *)buf, i);  
+    buf[i++] = crc; 
+
+    memcpy(txBuf,buf,i);
+    dbh("txBuf", txBuf, i);
+
+    return i;     
+    
+}
+
+
+
+static uint8_t getDevMode(uint8_t cmd,char *txBuf)
+{
+    char buf[128] = {0};
+    
+    uint8_t i = 0;
+    uint8_t crc = 0;   
+
+    i = 3;
+    buf[0] = HEAD;
+    buf[i++] = cmd;
+    buf[i++] = OK;
+
+    
+    if(cmd == GET_PROGRAM_MODE)
+    {
+        buf[i++] = getProgramMode();
+        
+    }
+    else if(cmd == GET_CARD_READER_TYPE)
+    {
+        buf[i++] = getCardReaderType();    
+    }
+    else if(cmd == GET_DOOR_TYPE)
+    {
+        buf[i++] = getDoorType();
+    }  
+
+    
+    buf[i++] = TAIL;
+    
+    buf[1] = i>>8;   //high
+    buf[2] = i&0xFF; //low   
+    
+    crc = xorCRC((uint8_t *)buf, i);  
+    buf[i++] = crc; 
+
+    memcpy(txBuf,buf,i);
+    dbh("txBuf", txBuf, i);
+
+    return i;     
+    
+}
+
+
+
+
+
 

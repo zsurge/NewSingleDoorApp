@@ -52,6 +52,8 @@ const char* dataProcTaskName = "vDataProcTask";
 TaskHandle_t xHandleTaskDataProc = NULL;
 CMD_BUFF_STRU gCmd_buff = {0};
 
+static void getCard(uint8_t *src);
+
 
 /*----------------------------------------------*
  * 内部函数原型说明                             *
@@ -156,15 +158,17 @@ static void vTaskDataProcess ( void* pvParameters )
 				log_d ( "test cardid %02x,%02x,%02x,%02x\r\n",ptMsg->cardID[0],ptMsg->cardID[1],ptMsg->cardID[2],ptMsg->cardID[3] );
 
 				ret = readHead ( ptMsg->cardID, CARD_MODE );
-				log_d ( "readHead = %d\r\n",ret );
+				log_d ( "readHead = %d\r\n",ret );	
 
+	
+				
 				if ( ret != NO_FIND_HEAD )
 				{
 					log_d ( "read card success\r\n" );
 
-					if ( DIP0 == 1 )
+					if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
+					//if ( DIP0 == 1 )
 					{
-
 						ptCmd->cmd_len = 8;
 
 						if ( ptMsg->devID == 1 )
@@ -181,7 +185,7 @@ static void vTaskDataProcess ( void* pvParameters )
 						                         ( void* ) &ptCmd,            /* 发送结构体指针变量ptReader的地址 */
 						                         ( TickType_t ) 30 );
 					}
-					else
+					else if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
 					{
 						devID = ptMsg->devID;
 
@@ -199,8 +203,7 @@ static void vTaskDataProcess ( void* pvParameters )
 						devReturn = xQueueSend ( xCmdQueue,           /* 消息队列句柄 */
 						                         ( void* ) &devID,            /* 发送结构体指针变量ptReader的地址 */
 						                         ( TickType_t ) 30 );
-					}
-
+					}				
 
 					if ( devReturn != pdPASS )
 					{
@@ -232,6 +235,12 @@ static void vTaskDataProcess ( void* pvParameters )
 				else
 				{
 					log_d ( "read card error: not find card\r\n" );
+                    if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
+					{
+					    dbh("ptMsg->cardID", ptMsg->cardID, 4);
+					    getCard(ptMsg->cardID);
+
+					}					
 				}
 			}
 			else if ( ptMsg->mode == REMOTE_OPEN_MODE ) //远程开门
@@ -240,7 +249,7 @@ static void vTaskDataProcess ( void* pvParameters )
 
 				log_d ( "read card success\r\n" );
 
-				if ( DIP0 == 1 )
+				if (gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
 				{
 					ptCmd->cmd_len = 8;
 					memcpy ( ptCmd->cmd,openLeft,ptCmd->cmd_len );
@@ -249,7 +258,7 @@ static void vTaskDataProcess ( void* pvParameters )
 					                         ( void* ) &ptCmd,              /* 发送结构体指针变量ptReader的地址 */
 					                         ( TickType_t ) 30 );
 				}
-				else
+				else if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
 				{
 					devID = 1;
 					gOpenDoorTimer.flag = 1;
@@ -257,6 +266,15 @@ static void vTaskDataProcess ( void* pvParameters )
 					devReturn = xQueueSend ( xCmdQueue,                 /* 消息队列句柄 */
 					                         ( void* ) &devID,             /* 发送结构体指针变量ptReader的地址 */
 					                         ( TickType_t ) 30 );
+				}
+				else if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
+				{
+					devID = 1;
+					gOpenDoorTimer.flag = 1;
+					gOpenDoorTimer.outTimer = 12000;
+					devReturn = xQueueSend ( xCmdQueue,                 /* 消息队列句柄 */
+					                         ( void* ) &devID,             /* 发送结构体指针变量ptReader的地址 */
+					                         ( TickType_t ) 30 );				
 				}
 
 				if ( devReturn != pdPASS )
@@ -278,5 +296,38 @@ static void vTaskDataProcess ( void* pvParameters )
 	}
 
 }
+
+
+void getCard(uint8_t *src)
+{
+    char buf[128] = {0};
+    
+    uint8_t i = 0;
+    uint8_t crc = 0;   
+
+    i = 3;
+    buf[0] = 0xA5;
+    buf[i++] = 0x0C;
+    buf[i++] = 0x00;
+
+    memcpy(buf+i,src,4);
+    
+    i+= 4;   
+    
+    buf[i++] = 0x5A;
+    
+    buf[1] = i>>8;   //high
+    buf[2] = i&0xFF; //low   
+    
+    crc = xorCRC((uint8_t *)buf, i);  
+    buf[i++] = crc; 
+
+
+    dbh("txBuf", buf, i);
+
+   RS485_SendBuf(COM2,(uint8_t *)buf,i);  
+    
+}
+
 
 

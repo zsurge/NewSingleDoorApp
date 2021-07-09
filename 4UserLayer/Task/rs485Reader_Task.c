@@ -77,6 +77,9 @@ TaskHandle_t xHandleTaskRs485Reader = NULL;
  *----------------------------------------------*/
 static void vTaskRs485Reader(void *pvParameters);
 static  uint8_t parseReader(void);
+static uint16_t parseCardId(char *src,char *cardId,uint8_t *mode);
+static void reverseArray(uint8_t *array) ;
+
 
 
 void CreateRs485ReaderTask(void)
@@ -90,10 +93,26 @@ void CreateRs485ReaderTask(void)
                 (TaskHandle_t*  )&xHandleTaskRs485Reader);
 }
 
+static void reverseArray(uint8_t *array) 
+{
+    int i,temp;
+    int size = sizeof(array)/sizeof(array[0]);
+
+    
+    for(i=0; i<size/2; i++)
+    {
+        temp = array[i];
+        array[i] = array[size-i-1];
+        array[size-i-1] = temp;
+    }   
+
+}
+
 static void vTaskRs485Reader(void *pvParameters)
 { 
         uint8_t sendBuff[512] = {0};
         uint16_t len = 0; 
+        uint8_t tmpValue;
         CARD_TYPE cardDev1;
         READER_BUFF_STRU *ptReaderBuf = &gReaderMsg;     
         uint32_t tmpID = 0;
@@ -102,14 +121,20 @@ static void vTaskRs485Reader(void *pvParameters)
             memset(sendBuff,0x00,sizeof(sendBuff));            
             if(parseReader() == FINISHED)
             {
-                len = gReaderData.rxCnt;
-                memcpy(sendBuff,gReaderData.rxBuff,len);        
+                len = parseCardId(gReaderData.rxBuff,sendBuff,&tmpValue);
+                
                 memset(&gReaderData,0x00,sizeof(FROMREADER_STRU));
 
                 log_d("recv buff = %s,len = %d\r\n",sendBuff,len);
-                if(len == 10)
-                {
+                
+                if(len == 8)
+                {    
+
+                    memcpy(sendBuff,"00",2);
                     sscanf((const char*)sendBuff,"%8x",&tmpID);
+
+                    
+                    log_d("sendBuff = %s\r\n",sendBuff);
                     
                     /* 清零 */
                     ptReaderBuf->devID = 0; 
@@ -118,6 +143,8 @@ static void vTaskRs485Reader(void *pvParameters)
                     Sound2(50);
 
                     cardDev1.id = tmpID;
+                    reverseArray(cardDev1.sn);
+                    
                     ptReaderBuf->devID = READER1; 
                     ptReaderBuf->mode = READMODE;
                     memcpy(ptReaderBuf->cardID,cardDev1.sn,sizeof(cardDev1.sn));   
@@ -179,6 +206,46 @@ static uint8_t parseReader(void)
     }   
 
    
+}
+
+static uint16_t parseCardId(char *src,char *cardId,uint8_t *mode)
+{
+    uint16_t srcLen = 0;
+    uint16_t dataLen = 0;
+    
+    
+    if(!src)
+    {
+        return 0;
+    }
+    
+    //去掉0D0A
+    if(strlen(src)-2 >QUEUE_BUF_LEN)
+    {
+        srcLen = QUEUE_BUF_LEN;
+    }
+    else
+    {
+        srcLen = strlen(src)-2;
+    }
+
+        //判定是刷卡还是QR
+    if(strstr_t((const char*)src,(const char*)"CARD") == NULL)
+    {
+        *mode = AUTH_MODE_QR;   
+        dataLen = srcLen;
+        memcpy(cardId,src,dataLen);
+    }
+    else
+    {
+        dataLen = 8;//卡号长度为8
+        *mode = AUTH_MODE_CARD;  
+        //CARD 120065AA89000000000 所以offset = 7
+        memcpy(cardId,src + 9,dataLen);        
+    }
+
+    return dataLen;
+    
 }
 
 
