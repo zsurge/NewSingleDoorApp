@@ -154,13 +154,11 @@ static void vTaskDataProcess ( void* pvParameters )
 			else if ( ptMsg->mode == READMODE ) //读卡
 			{
 
-				//                memcpy(ptMsg->cardID,"\x00\xfb\x4b\xfb",4);
-				log_d ( "test cardid %02x,%02x,%02x,%02x\r\n",ptMsg->cardID[0],ptMsg->cardID[1],ptMsg->cardID[2],ptMsg->cardID[3] );
+				//memcpy(ptMsg->cardID,"\x00\xfb\x4b\xfb",4);
+				log_d ( "test cardid %02x,%02x,%02x,%02x\r\n",ptMsg->cardID[0],ptMsg->cardID[1],ptMsg->cardID[2],ptMsg->cardID[3]);
 
 				ret = readHead ( ptMsg->cardID, CARD_MODE );
-				log_d ( "readHead = %d\r\n",ret );	
-
-	
+				log_d ( "readHead = %d\r\n",ret );		
 				
 				if ( ret != NO_FIND_HEAD )
 				{
@@ -237,9 +235,16 @@ static void vTaskDataProcess ( void* pvParameters )
 					log_d ( "read card error: not find card\r\n" );
                     if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
 					{
-					    dbh("ptMsg->cardID", ptMsg->cardID, 4);
+                        devID = ptMsg->devID;
+                        gOpenDoorTimer.flag = 1;
+                        gOpenDoorTimer.outTimer = 12000;
+                        gOpenDoorTimer.flag = 2;
+                        gOpenDoorTimer.outTimer = 12000;                        
+					
+						devReturn = xQueueSend ( xCmdQueue,           /* 消息队列句柄 */
+						                         ( void* ) &devID,            /* 发送结构体指针变量ptReader的地址 */
+						                         ( TickType_t ) 30 );					    
 					    getCard(ptMsg->cardID);
-
 					}					
 				}
 			}
@@ -270,8 +275,11 @@ static void vTaskDataProcess ( void* pvParameters )
 				else if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
 				{
 					devID = 1;
-					gOpenDoorTimer.flag = 1;
-					gOpenDoorTimer.outTimer = 12000;
+                    gOpenDoorTimer.flag = 1;
+                    gOpenDoorTimer.outTimer = 12000;
+                    gOpenDoorTimer.flag = 2;
+                    gOpenDoorTimer.outTimer = 12000;  
+
 					devReturn = xQueueSend ( xCmdQueue,                 /* 消息队列句柄 */
 					                         ( void* ) &devID,             /* 发送结构体指针变量ptReader的地址 */
 					                         ( TickType_t ) 30 );				

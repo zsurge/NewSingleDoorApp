@@ -112,7 +112,11 @@ int readHead(uint8_t *headBuff,uint8_t mode)
 	memcpy(targetData.headData.sn,headBuff,sizeof(targetData.headData.sn));
 
     log_d("want find head.headData.id = %x,sn = %02x,%02x,%02x,%02x\r\n",targetData.headData.id,targetData.headData.sn[0],targetData.headData.sn[1],targetData.headData.sn[2],targetData.headData.sn[3]);
-	
+
+	if(targetData.headData.id == 0x5de3e100)
+	{
+	    return -999;
+	}
 
     ClearRecordIndex();
     optRecordIndex(&gRecordIndex,READ_PRARM);
