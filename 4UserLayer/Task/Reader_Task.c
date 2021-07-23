@@ -31,20 +31,11 @@
 #include "bsp_Wiegand.h"
 #include "bsp_beep.h"
 
-
-
-
-
-
 /*----------------------------------------------*
  * ∫Í∂®“Â                                       *
  *----------------------------------------------*/
 #define READER_TASK_PRIO	    ( tskIDLE_PRIORITY + 1)
 #define READER_STK_SIZE 		(configMINIMAL_STACK_SIZE*4)
-
-
-
-
 
 typedef union
 {
@@ -85,15 +76,13 @@ void reverseArray(uint8_t *array)
 {
     int i,temp;
     int size = sizeof(array)/sizeof(array[0]);
-
     
     for(i=0; i<size/2; i++)
     {
         temp = array[i];
         array[i] = array[size-i-1];
         array[size-i-1] = temp;
-    }   
-
+    }  
 }
 
 

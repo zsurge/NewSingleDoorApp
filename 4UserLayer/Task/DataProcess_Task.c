@@ -162,7 +162,7 @@ static void vTaskDataProcess ( void* pvParameters )
 				log_d ( "test cardid %02x,%02x,%02x,%02x\r\n",ptMsg->cardID[0],ptMsg->cardID[1],ptMsg->cardID[2],ptMsg->cardID[3]);
 
 				ret = readHead ( ptMsg->cardID, CARD_MODE );
-				log_d ( "readHead = %d\r\n",ret );		
+				log_d ( "readHead = %d\r\n",ret );	
 				
 				if ( ret != NO_FIND_HEAD )
 				{
