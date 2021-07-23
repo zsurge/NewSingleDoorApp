@@ -113,6 +113,7 @@ static void AppTaskCreate (void)
     {
         //це╫Ш
         CreateOpenDoorTask();       //1 8      
+
     }
     else if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
     {

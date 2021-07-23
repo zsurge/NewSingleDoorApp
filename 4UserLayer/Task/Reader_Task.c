@@ -40,7 +40,7 @@
  * 宏定义                                       *
  *----------------------------------------------*/
 #define READER_TASK_PRIO	    ( tskIDLE_PRIORITY + 1)
-#define READER_STK_SIZE 		(configMINIMAL_STACK_SIZE*8)
+#define READER_STK_SIZE 		(configMINIMAL_STACK_SIZE*4)
 
 
 
@@ -116,7 +116,7 @@ static void vTaskReader(void *pvParameters)
 
         if(cardDev1.id != 0)
         {
-            Sound2(50);
+            //Sound2(50);
             reverseArray(cardDev1.sn);
             
             ptReaderBuf->devID = READER1; 
@@ -127,7 +127,7 @@ static void vTaskReader(void *pvParameters)
 			/* 使用消息队列实现指针变量的传递 */
 			if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
 						 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
-						 (TickType_t)10) != pdPASS )
+						 (TickType_t)20) != pdPASS )
 			{
 //                xQueueReset(xCardIDQueue); 删除该句，为了防止在下发数据的时候刷卡
                 log_d("send card1  queue is error!\r\n"); 
@@ -144,7 +144,7 @@ static void vTaskReader(void *pvParameters)
 
         if(cardDev2.id != 0)
         {
-            Sound2(50);
+            //Sound2(50);
             reverseArray(cardDev2.sn);
             
             ptReaderBuf->devID = READER2; 
@@ -154,7 +154,7 @@ static void vTaskReader(void *pvParameters)
 			/* 使用消息队列实现指针变量的传递 */
 			if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
 						 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
-						 (TickType_t)10) != pdPASS )
+						 (TickType_t)20) != pdPASS )
 			{
 //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
                 log_d("send card2  queue is error!\r\n"); 
