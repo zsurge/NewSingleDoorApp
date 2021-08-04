@@ -88,7 +88,6 @@ static SYSERRORCODE_E DownLoadCardID ( uint8_t* msgBuf ); //获取用户信息
 static SYSERRORCODE_E RemoteOptDev ( uint8_t* msgBuf ); //远程呼梯
 static SYSERRORCODE_E ClearUserInof ( uint8_t* msgBuf ); //删除用户信息
 static SYSERRORCODE_E SetLocalTime( uint8_t* msgBuf ); //设置本地时间
-static SYSERRORCODE_E SetLocalTime_Elevator( uint8_t* msgBuf );
 static SYSERRORCODE_E SetLocalSn( uint8_t* msgBuf ); //设置本地SN，MQTT用
 static SYSERRORCODE_E DelCardSingle( uint8_t* msgBuf ); //删除卡号
 static SYSERRORCODE_E getRemoteTime ( uint8_t* msgBuf );//获取远程服务器时间
@@ -124,9 +123,8 @@ const CMD_HANDLE_T CmdList[] =
     {"10031", RemoteOptDev},        
     {"10003", ClearUserInof},   
     {"10002", EnableDev}, //同绑定
-    {"88888", SetLocalTime}, 
-    {"3013", SetLocalTime_Elevator},
-    {"30131", getRemoteTime},
+    {"88888", SetLocalTime},
+    {"88881", getRemoteTime}
 };
 
 
@@ -955,29 +953,6 @@ static SYSERRORCODE_E SetLocalTime( uint8_t* msgBuf )
         return STR_EMPTY_ERR;
     }
 
-    strcpy((char *)localTime,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"time",0));
-
-    //保存本地时间
-    log_d("server time is %s\r\n",localTime);
-
-    bsp_ds1302_mdifytime(localTime);
-
-
-    return result;
-
-}
-
-//设置本地时间
-static SYSERRORCODE_E SetLocalTime_Elevator( uint8_t* msgBuf )
-{
-    SYSERRORCODE_E result = NO_ERR;
-    uint8_t localTime[32] = {0};
-    
-    if(!msgBuf)
-    {
-        return STR_EMPTY_ERR;
-    }
-
     strcpy((char *)localTime,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"time",1));
 
     //保存本地时间
@@ -989,6 +964,8 @@ static SYSERRORCODE_E SetLocalTime_Elevator( uint8_t* msgBuf )
     return result;
 
 }
+
+
 
 
 //设置本地SN，MQTT用

@@ -29,6 +29,7 @@
 #include "rs485Reader_Task.h"
 #include "CmdHandle.h"
 #include "bsp_beep.h"
+#include "tool.h"
 
 
 /*----------------------------------------------*
@@ -52,7 +53,7 @@ const char *rS485ReaderTaskName = "vRS485ReadTask";
 
 typedef struct FROMREADER
 {
-    uint8_t rxBuff[512];               //接收字节数    
+    uint8_t rxBuff[32];               //接收字节数    
     uint8_t rxStatus;                   //接收状态
     uint16_t rxCnt;                     //接收字节数
 }FROMREADER_STRU;
@@ -76,7 +77,7 @@ TaskHandle_t xHandleTaskRs485Reader = NULL;
  * 内部函数原型说明                             *
  *----------------------------------------------*/
 static void vTaskRs485Reader(void *pvParameters);
-static  uint8_t parseReader(void);
+static uint8_t parseReader(COM_PORT_E port);
 static uint16_t parseCardId(char *src,char *cardId,uint8_t *mode);
 static void reverseArray(uint8_t *array) ;
 
@@ -110,18 +111,21 @@ static void reverseArray(uint8_t *array)
 
 static void vTaskRs485Reader(void *pvParameters)
 { 
-        uint8_t sendBuff[512] = {0};
+        uint8_t sendBuff[32] = {0};
         uint16_t len = 0; 
         uint8_t tmpValue;
-        CARD_TYPE cardDev1;
+        CARD_TYPE cardDev1,cardDev2;
         READER_BUFF_STRU *ptReaderBuf = &gReaderMsg;     
         uint32_t tmpID = 0;
+
+        log_d("485 Reader Start\r\n");
+        
         while(1)
         { 
             memset(sendBuff,0x00,sizeof(sendBuff));            
-            if(parseReader() == FINISHED)
+            if(parseReader(COM3) == FINISHED)
             {
-                len = parseCardId(gReaderData.rxBuff,sendBuff,&tmpValue);
+                len = parseCardId((char *)gReaderData.rxBuff,(char *)sendBuff,&tmpValue);
                 
                 memset(&gReaderData,0x00,sizeof(FROMREADER_STRU));
 
@@ -162,23 +166,68 @@ static void vTaskRs485Reader(void *pvParameters)
                     }
                 }
             }
+
+            memset(sendBuff,0x00,sizeof(sendBuff));            
+            if(parseReader(COM2) == FINISHED)
+            {
+                len = parseCardId((char *)gReaderData.rxBuff,(char *)sendBuff,&tmpValue);
+                
+                memset(&gReaderData,0x00,sizeof(FROMREADER_STRU));
+
+                log_d("recv buff = %s,len = %d\r\n",sendBuff,len);
+                
+                if(len == 8)
+                {    
+
+                    memcpy(sendBuff,"00",2);
+                    sscanf((const char*)sendBuff,"%8x",&tmpID);
+
+                    
+                    log_d("sendBuff = %s\r\n",sendBuff);
+                    
+                    /* 清零 */
+                    ptReaderBuf->devID = 0; 
+                    ptReaderBuf->mode = 0;
+                    memset(ptReaderBuf->cardID,0x00,sizeof(ptReaderBuf->cardID));  
+                    Sound2(50);
+
+                    cardDev2.id = tmpID;
+                    reverseArray(cardDev2.sn);
+                    
+                    ptReaderBuf->devID = READER2; 
+                    ptReaderBuf->mode = READMODE;
+                    memcpy(ptReaderBuf->cardID,cardDev2.sn,sizeof(cardDev2.sn));   
+
+
+                    /* 使用消息队列实现指针变量的传递 */
+                    if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+                               (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+                               (TickType_t)10) != pdPASS )
+                    {
+                    //                xQueueReset(xCardIDQueue); 删除该句，为了防止在下发数据的时候刷卡
+                      log_d("send card1  queue is error!\r\n"); 
+                      //发送卡号失败蜂鸣器提示
+                      //或者是队列满                
+                    }
+                }
+            }           
             
         	/* 发送事件标志，表示任务正常运行 */        
         	xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_2);   
 
-            vTaskDelay(200); 
+            vTaskDelay(100); 
         }
 
 }
 
-static uint8_t parseReader(void)
+static uint8_t parseReader(COM_PORT_E port)
 {
     uint8_t ch = 0;   
     
     while(1)
     {    
         //读取485数据，若是没读到，退出，再重读
-        if(!RS485_Recv(COM3,&ch,1))
+        if(!RS485_Recv(port,&ch,1))
         {            
             return UNFINISHED;
         }
@@ -189,7 +238,7 @@ static uint8_t parseReader(void)
 //        log_d("ch = %c,gReaderData.rxBuff = %c \r\n",ch,gReaderData.rxBuff[gReaderData.rxCnt-1]);
          
         //最后一个字节为回车，或者总长度为510后，结束读取
-        if(gReaderData.rxBuff[gReaderData.rxCnt-1] == 0x0A || gReaderData.rxCnt >=510)
+        if(gReaderData.rxBuff[gReaderData.rxCnt-1] == 0x0A || gReaderData.rxCnt >=32)
         {   
             
            if(gReaderData.rxBuff[gReaderData.rxCnt-1] == 0x0A)

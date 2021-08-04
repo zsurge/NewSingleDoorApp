@@ -73,6 +73,8 @@ static void vTaskOpenDoor(void *pvParameters)
 
     uint32_t devID = 0;
 
+    log_d("Door Mode Start\r\n");
+
     while(1)
     { 
         if(gOpenDoorTimer.flag == 1 && gOpenDoorTimer.outTimer == 0)

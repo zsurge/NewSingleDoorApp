@@ -252,6 +252,7 @@ static void vTaskComm(void *pvParameters)
     
     memset(&gCmd_buff,0x00,sizeof(CMD_BUFF_STRU));   
     
+    log_d("Channel Mode Start\r\n");
 
     while(1)
     { 

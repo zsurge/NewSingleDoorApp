@@ -90,7 +90,9 @@ void reverseArray(uint8_t *array)
 static void vTaskReader(void *pvParameters)
 { 
     CARD_TYPE cardDev1,cardDev2;    
-    READER_BUFF_STRU *ptReaderBuf = &gReaderMsg;     
+    READER_BUFF_STRU *ptReaderBuf = &gReaderMsg;   
+
+    log_d("WG Reader Start\r\n");
 
     while(1)
     {        
@@ -153,7 +155,7 @@ static void vTaskReader(void *pvParameters)
         }  
         
     	/* 发送事件标志，表示任务正常运行 */        
-    	xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_2);       
+    	xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_0);       
         
         vTaskDelay(100);        
     }

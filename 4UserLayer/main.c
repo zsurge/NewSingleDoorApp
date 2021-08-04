@@ -17,13 +17,13 @@
 *****************************************************************************
 硬件资源分配：
 1.串口1 调试串口
-2.串口2 跟PC端通讯串口，调试使用；
-3.串口3 RS485 读卡器
-4.
-
-
-
-
+2.串口2 RS485 读卡器2；
+3.串口3 RS485 读卡器1
+4.拨码开关默认为全1
+ DIP0 = 1  门禁         = 0    通道闸
+ DIP1 = 1         = 0    
+ DIP2 = 1         = 0    
+ DIP3 = 1  正常模式        = 0   测试模式
 ******************************************************************************/
 
 
@@ -106,40 +106,57 @@ static void AppTaskCreate (void)
     StartEthernet();  
 
     //LED灯
-    CreateLedTask();                //0 2
+    //CreateLedTask();                //0 2
 
-    //跟控制板通讯    
-    if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
+    //跟控制板通讯  
+
+    if(DIP0 == 1)
+    {
+        //门禁
+        CreateOpenDoorTask();       //1 8        
+    }
+    else if(DIP0 == 0)
+    {
+        //通道闸
+        CreateCommTask();           //1 8     
+    }
+    else
     {
         //门禁
         CreateOpenDoorTask();       //1 8      
+    }
+    
+//    if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
+//    {
+//        //门禁
+//        CreateOpenDoorTask();       //1 8      
 
-    }
-    else if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
-    {
-        //通道闸
-        CreateCommTask();           //1 8  
-    }
-    else
-    {
-        CreateOpenDoorTask();       //1 8    
-    }    
+//    }
+//    else if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
+//    {
+//        //通道闸
+//        CreateCommTask();           //1 8  
+//    }
+//    else
+//    {
+//        CreateOpenDoorTask();       //1 8    
+//    }    
 
-    //读卡器
-    if(gDevBaseParam.cardReaderType == CARD_READER_WG)
-    {
-        //韦根读卡器
-        CreateReaderTask();         //2   1    
-    }
-    else if(gDevBaseParam.cardReaderType == CARD_READER_RS485)
-    {    
-        //RS485读卡器
+//    //读卡器
+//    if(gDevBaseParam.cardReaderType == CARD_READER_WG)
+//    {
+//        //韦根读卡器
+        CreateReaderTask();         //0   1    
+//    }
+//    else if(gDevBaseParam.cardReaderType == CARD_READER_RS485)
+//    {    
+//        //RS485读卡器
         CreateRs485ReaderTask();     // 2 1    
-    }
-    else
-    {
-        CreateReaderTask();         //2   1    
-    }
+//    }
+//    else
+//    {
+//        CreateReaderTask();         //2   1    
+//    }
 
     //卡数据处理
     CreateDataProcessTask();        //3   6
@@ -149,7 +166,8 @@ static void AppTaskCreate (void)
     CreateMqttTask();               //4   5
 
     //看门狗 只要在工作模式下才启动
-    if(gDevBaseParam.progamMode != PROGRAMMODE_TEST)
+    //if(gDevBaseParam.progamMode != PROGRAMMODE_TEST)
+    if(DIP3 == 1)
     {
         CreateWatchDogTask();
     }
@@ -202,24 +220,46 @@ static void AppObjCreate (void)
     }
     
 
-    if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR || gDevBaseParam.progamMode == PROGRAMMODE_TEST)
-    {
-        xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
-                                  (UBaseType_t ) QUEUE_SIZE);/* 消息的大小 */
-        if(xCmdQueue == NULL)
-        {
-            App_Printf("create xCmdQueue error!\r\n");
-        }
-    }
-    else if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
+//    if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR || gDevBaseParam.progamMode == PROGRAMMODE_TEST)   
+//    {
+//        xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
+//                                  (UBaseType_t ) QUEUE_SIZE);/* 消息的大小 */
+//        if(xCmdQueue == NULL)
+//        {
+//            App_Printf("create xCmdQueue error!\r\n");
+//        }
+//    }
+//    else if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
+//    {
+//        xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
+//                                  (UBaseType_t ) sizeof(CMD_BUFF_STRU *));/* 消息的大小 */
+//        if(xCmdQueue == NULL)
+//        {
+//            App_Printf("create xCmdQueue error!\r\n");
+//        }
+//    }
+
+    if ( DIP0 == 0 ) //通道闸
     {
         xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
                                   (UBaseType_t ) sizeof(CMD_BUFF_STRU *));/* 消息的大小 */
-        if(xCmdQueue == NULL)
+        if(xCmdQueue != NULL)
         {
-            App_Printf("create xCmdQueue error!\r\n");
+            App_Printf("create xCmdQueue success!\r\n");
         }
     }
+    else
+    {
+        xCmdQueue = xQueueCreate((UBaseType_t ) QUEUE_LEN,/* 消息队列的长度 */
+                                  (UBaseType_t ) QUEUE_SIZE);/* 消息的大小 */
+        if(xCmdQueue != NULL)
+        {
+            App_Printf("create xCmdQueue success!\r\n");
+        }
+    }
+
+
+    
 }
 
 

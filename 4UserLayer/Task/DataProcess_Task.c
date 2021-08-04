@@ -30,6 +30,7 @@
 #include "tool.h"
 #include "bsp_time.h"
 #include "bsp_dipSwitch.h"
+#include "bsp_led.h"
 
 
 /*----------------------------------------------*
@@ -92,6 +93,7 @@ static void vTaskDataProcess ( void* pvParameters )
 
 	while ( 1 )
 	{
+	    LEDERROR = !LEDERROR; 
 		//卡号下发完成后，30秒无卡号下发，则进最后一面进行排序
 		if ( gCardSortTimer.flag && gCardSortTimer.outTimer == 0 )
 		{
@@ -168,8 +170,8 @@ static void vTaskDataProcess ( void* pvParameters )
 				{
 					log_d ( "read card success\r\n" );
 
-					if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
-					//if ( DIP0 == 1 )
+					//if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
+					if ( DIP0 == 0 )
 					{
 						ptCmd->cmd_len = 8;
 
@@ -187,7 +189,8 @@ static void vTaskDataProcess ( void* pvParameters )
 						                         ( void* ) &ptCmd,            /* 发送结构体指针变量ptReader的地址 */
 						                         ( TickType_t ) 30 );
 					}
-					else if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
+					//else if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
+					else if ( DIP0 == 1 )
 					{
 						devID = ptMsg->devID;
 
@@ -237,7 +240,8 @@ static void vTaskDataProcess ( void* pvParameters )
 				else
 				{
 					log_d ( "read card error: not find card\r\n" );
-                    if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
+                    //if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
+                    if(DIP3 == 0)
 					{
                         devID = ptMsg->devID;
                         gOpenDoorTimer.flag = 1;
@@ -248,7 +252,7 @@ static void vTaskDataProcess ( void* pvParameters )
 						devReturn = xQueueSend ( xCmdQueue,           /* 消息队列句柄 */
 						                         ( void* ) &devID,            /* 发送结构体指针变量ptReader的地址 */
 						                         ( TickType_t ) 30 );					    
-					    getCard(ptMsg->cardID);
+//					    getCard(ptMsg->cardID);
 					}					
 				}
 			}
@@ -258,7 +262,8 @@ static void vTaskDataProcess ( void* pvParameters )
 
 				log_d ( "read card success\r\n" );
 
-				if (gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
+				//if (gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
+				if ( DIP0 == 0 )
 				{
 					ptCmd->cmd_len = 8;
 					memcpy ( ptCmd->cmd,openLeft,ptCmd->cmd_len );
@@ -267,7 +272,8 @@ static void vTaskDataProcess ( void* pvParameters )
 					                         ( void* ) &ptCmd,              /* 发送结构体指针变量ptReader的地址 */
 					                         ( TickType_t ) 30 );
 				}
-				else if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
+				//else if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
+				else if ( DIP0 == 1 )
 				{
 					devID = 1;
 					gOpenDoorTimer.flag = 1;
@@ -276,7 +282,8 @@ static void vTaskDataProcess ( void* pvParameters )
 					                         ( void* ) &devID,             /* 发送结构体指针变量ptReader的地址 */
 					                         ( TickType_t ) 30 );
 				}
-				else if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
+				else if ( DIP3 == 0 )
+				//else if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
 				{
 					devID = 1;
                     gOpenDoorTimer.flag = 1;
@@ -310,36 +317,36 @@ static void vTaskDataProcess ( void* pvParameters )
 }
 
 
-void getCard(uint8_t *src)
-{
-    char buf[128] = {0};
-    
-    uint8_t i = 0;
-    uint8_t crc = 0;   
+//void getCard(uint8_t *src)
+//{
+//    char buf[128] = {0};
+//    
+//    uint8_t i = 0;
+//    uint8_t crc = 0;   
 
-    i = 3;
-    buf[0] = 0xA5;
-    buf[i++] = 0x0C;
-    buf[i++] = 0x00;
+//    i = 3;
+//    buf[0] = 0xA5;
+//    buf[i++] = 0x0C;
+//    buf[i++] = 0x00;
 
-    memcpy(buf+i,src,4);
-    
-    i+= 4;   
-    
-    buf[i++] = 0x5A;
-    
-    buf[1] = i>>8;   //high
-    buf[2] = i&0xFF; //low   
-    
-    crc = xorCRC((uint8_t *)buf, i);  
-    buf[i++] = crc; 
+//    memcpy(buf+i,src,4);
+//    
+//    i+= 4;   
+//    
+//    buf[i++] = 0x5A;
+//    
+//    buf[1] = i>>8;   //high
+//    buf[2] = i&0xFF; //low   
+//    
+//    crc = xorCRC((uint8_t *)buf, i);  
+//    buf[i++] = crc; 
 
 
-    dbh("txBuf", buf, i);
+//    dbh("txBuf", buf, i);
 
-   RS485_SendBuf(COM2,(uint8_t *)buf,i);  
-    
-}
+//   RS485_SendBuf(COM2,(uint8_t *)buf,i);  
+//    
+//}
 
 
 

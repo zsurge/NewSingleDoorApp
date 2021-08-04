@@ -47,7 +47,7 @@
 //ЖўЮЌТы
 #define AUTH_MODE_QR        7
 
-#define QUEUE_BUF_LEN   512
+#define QUEUE_BUF_LEN   32
 
 
 #define CARD_ID_LEN     4

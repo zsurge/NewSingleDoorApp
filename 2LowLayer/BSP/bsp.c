@@ -47,6 +47,24 @@ static void my_mem_init(void)
 	mymem_init(SRAMCCM);	  					    //初始化CCM内存池
 }
 
+ static void DisplayDevInfo(void);
+ 
+ 
+ 
+ static void DisplayDevInfo(void)
+ {
+     printf("\r\n==========Version==========\r\n");
+     printf("Softversion :%s\r\n",gDevinfo.SoftwareVersion);
+     printf("HardwareVersion :%s\r\n", gDevinfo.HardwareVersion);
+     printf("Model :%s\r\n", gDevinfo.Model);
+     printf("ProductBatch :%s\r\n", gDevinfo.ProductBatch);      
+     printf("BulidDate :%s\r\n", gDevinfo.BulidDate);
+     printf("DevSn :%s\r\n", gDevinfo.GetSn());
+     printf("Devip :%s\r\n", gDevinfo.GetIP());
+     printf("DevID :%s\r\n", gDevBaseParam.deviceCode.qrSn);
+
+     printf("bit 0 = %d,bit 1 = %d,bit 2 = %d,bit 3 = %d\r\n",DIP0,DIP1,DIP2,DIP3);
+ }
 
  void bsp_Init(void)
 {
@@ -78,13 +96,10 @@ static void my_mem_init(void)
 
 
     my_mem_init();                  //对内存进行初始化  
-
-    DBG("bit 0 = %d,bit 1 = %d,bit 2 = %d,bit 3 = %d\r\n",DIP0,DIP1,DIP2,DIP3);
-
     
     initDevParam();
-
     
+    DisplayDevInfo();
   /* CmBacktrace initialize */
 //   cm_backtrace_init("SingleDoorApp", HARDWARE_VERSION, SOFTWARE_VERSION);
 

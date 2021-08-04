@@ -37,9 +37,9 @@
  * 宏定义                                       *
  *----------------------------------------------*/
 #define LED_TASK_PRIO	    (tskIDLE_PRIORITY+2)
-#define LED_STK_SIZE 		(configMINIMAL_STACK_SIZE*8)
+#define LED_STK_SIZE 		(configMINIMAL_STACK_SIZE)
 
-
+#ifdef SERIAL
 #define STEP_1   0
 #define STEP_2   10
 #define STEP_3   20
@@ -72,7 +72,7 @@
 
 #define OK  0x00
 #define ERR 0x01
-
+#endif
 
 
 /*----------------------------------------------*
@@ -86,14 +86,6 @@ const char *ledTaskName = "vLedTask";      //LED任务名称
  *----------------------------------------------*/
 TaskHandle_t xHandleTaskLed = NULL;      //LED灯
 
-typedef struct FROM_PC
-{
-    uint8_t rxStatus;                   //接收状态
-    uint8_t rxCRC;                      //校验值.
-    uint8_t rxCnt;                      //已接收字节数  
-    uint8_t rxBuff[64];                 //接收字节
-    uint8_t rxPacketState;              //整个数据包接收状态       
-}FROM_PC_STRU;
 
 
 /*----------------------------------------------*
@@ -102,6 +94,17 @@ typedef struct FROM_PC
 static void vTaskLed(void *pvParameters);
 
 static void showTask(void);
+
+
+#ifdef SERIAL
+typedef struct FROM_PC
+{
+    uint8_t rxStatus;                   //接收状态
+    uint8_t rxCRC;                      //校验值.
+    uint8_t rxCnt;                      //已接收字节数  
+    uint8_t rxBuff[64];                 //接收字节
+    uint8_t rxPacketState;              //整个数据包接收状态       
+}FROM_PC_STRU;
 
 static FROM_PC_STRU rxFromPc;
 
@@ -119,6 +122,7 @@ static uint8_t resetBaseParam(char *txBuf);
 
 static uint8_t setDevMode(uint8_t cmd,char *src,uint8_t bufLen,char *txBuf);
 static uint8_t getDevMode(uint8_t cmd,char *txBuf);
+#endif
 
 
 
@@ -126,22 +130,6 @@ static uint8_t getDevMode(uint8_t cmd,char *txBuf);
 
 
 
-static void DisplayDevInfo(void);
-
-
-
-static void DisplayDevInfo(void)
-{
-    printf("\r\n==========Version==========\r\n");
-	printf("Softversion :%s\r\n",gDevinfo.SoftwareVersion);
-    printf("HardwareVersion :%s\r\n", gDevinfo.HardwareVersion);
-	printf("Model :%s\r\n", gDevinfo.Model);
-	printf("ProductBatch :%s\r\n", gDevinfo.ProductBatch);	    
-	printf("BulidDate :%s\r\n", gDevinfo.BulidDate);
-	printf("DevSn :%s\r\n", gDevinfo.GetSn());
-    printf("Devip :%s\r\n", gDevinfo.GetIP());
-	printf("DevID :%s\r\n", gDevBaseParam.deviceCode.qrSn);
-}
 
 
 void CreateLedTask(void)
@@ -161,7 +149,7 @@ static void vTaskLed(void *pvParameters)
 {  
     uint16_t i = 0;
     
-    DisplayDevInfo();
+//    DisplayDevInfo();
     
     while(1)
     {  
@@ -173,8 +161,8 @@ static void vTaskLed(void *pvParameters)
 //            showTask();
         }
 
-        deal_pc_procotol();
-        deal_pc_data();
+//        deal_pc_procotol();
+//        deal_pc_data();
 
         //这里要判定是否是测试模式，若是，才响应上位机
         
@@ -203,6 +191,9 @@ static void showTask(void)
     printf("系统当前内存大小为 %d 字节，开始申请内存\r\n",g_memsize);      
 
 }
+
+
+#ifdef SERIAL
 
 void deal_pc_procotol(void)
 {
@@ -782,7 +773,7 @@ static uint8_t getDevMode(uint8_t cmd,char *txBuf)
     return i;     
     
 }
-
+#endif
 
 
 
