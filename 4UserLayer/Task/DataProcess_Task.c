@@ -275,12 +275,22 @@ static void vTaskDataProcess ( void* pvParameters )
 				//else if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
 				else if ( DIP0 == 1 )
 				{
-					devID = 1;
-					gOpenDoorTimer.flag = 1;
-					gOpenDoorTimer.outTimer = 12000;
-					devReturn = xQueueSend ( xCmdQueue,                 /* 消息队列句柄 */
-					                         ( void* ) &devID,             /* 发送结构体指针变量ptReader的地址 */
-					                         ( TickType_t ) 30 );
+                    devID = ptMsg->devID;
+                    
+                    if ( devID == READER1 )
+                    {
+                        gOpenDoorTimer.flag = 1;
+                        gOpenDoorTimer.outTimer = 12000;
+                    }
+                    else if ( devID == READER2 )
+                    {
+                        gOpenDoor2Timer.flag = 1;
+                        gOpenDoor2Timer.outTimer = 12000;
+                    }
+                    
+                    devReturn = xQueueSend ( xCmdQueue,           /* 消息队列句柄 */
+                                             ( void* ) &devID,            /* 发送结构体指针变量ptReader的地址 */
+                                             ( TickType_t ) 30 );
 				}
 				else if ( DIP3 == 0 )
 				//else if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)

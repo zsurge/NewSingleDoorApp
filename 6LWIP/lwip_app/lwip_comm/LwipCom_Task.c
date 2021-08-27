@@ -16,6 +16,9 @@
 #include 	"FreeRTOS.h"
 #include 	"task.h"
 
+#include "led_task.h"
+
+
 /***************************************************************************************************/
 /**************************************局部变量声明*************************************************/
 /***************************************************************************************************/
@@ -56,6 +59,7 @@ void ChangeNetifLinkStatues(void *pvParameters)
 static void vLwipComTask( void *pvParameters )
 {
 //    printf("start vLwipComTask\r\n");
+    xTaskNotifyGive(xHandleTaskLed);
 	while(1)
 	{
 		ChangeNetifLinkStatues(pvParameters);

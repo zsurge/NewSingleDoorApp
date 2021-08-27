@@ -73,7 +73,6 @@ int main(void)
     
 	/* 创建任务通信机制 */
 	AppObjCreate();
-
     
     //创建AppTaskCreate任务
     xTaskCreate((TaskFunction_t )AppTaskCreate,     
@@ -103,10 +102,10 @@ static void AppTaskCreate (void)
     taskENTER_CRITICAL();    
 
     //网卡初始化
-    StartEthernet();  
-
+    StartEthernet(); 
+    
     //LED灯
-    //CreateLedTask();                //0 2
+    CreateLedTask();                //5 2
 
     //跟控制板通讯  
 
@@ -125,38 +124,13 @@ static void AppTaskCreate (void)
         //门禁
         CreateOpenDoorTask();       //1 8      
     }
-    
-//    if(gDevBaseParam.progamMode == PROGRAMMODE_DOOR)
-//    {
-//        //门禁
-//        CreateOpenDoorTask();       //1 8      
 
-//    }
-//    else if(gDevBaseParam.progamMode == PROGRAMMODE_CHANNEL)
-//    {
-//        //通道闸
-//        CreateCommTask();           //1 8  
-//    }
-//    else
-//    {
-//        CreateOpenDoorTask();       //1 8    
-//    }    
+    //韦根读卡器
+    CreateReaderTask();         //0   1    
 
-//    //读卡器
-//    if(gDevBaseParam.cardReaderType == CARD_READER_WG)
-//    {
-//        //韦根读卡器
-        CreateReaderTask();         //0   1    
-//    }
-//    else if(gDevBaseParam.cardReaderType == CARD_READER_RS485)
-//    {    
-//        //RS485读卡器
-        CreateRs485ReaderTask();     // 2 1    
-//    }
-//    else
-//    {
-//        CreateReaderTask();         //2   1    
-//    }
+    //RS485读卡器
+    CreateRs485ReaderTask();     // 2 1    
+
 
     //卡数据处理
     CreateDataProcessTask();        //3   6

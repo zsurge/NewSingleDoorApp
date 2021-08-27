@@ -279,6 +279,8 @@ SYSERRORCODE_E OpenDoor ( uint8_t* msgBuf )
 {
 	SYSERRORCODE_E result = NO_ERR;
     uint8_t buf[MQTT_TEMP_LEN] = {0};
+    uint8_t tmp[4] = {0}; 
+    int type = -1;
     uint16_t len = 0;
     READER_BUFF_STRU *ptReaderBuf = &gReaderMsg;     
 
@@ -286,10 +288,14 @@ SYSERRORCODE_E OpenDoor ( uint8_t* msgBuf )
     {
         return STR_EMPTY_ERR;
     }
+
+    //2.获取开门动作 
+    memset(tmp,0x00,sizeof(tmp));
+    strcpy((char *)tmp,(const char *)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"doorOption",1));
+    log_d("doorOption = %s,len = %d\r\n",tmp,strlen((const char*)tmp));
+
+    type = atoi(tmp);
     
-    log_d("======OpenDoor Pre = %3d%======\r\n",mem_perused(SRAMIN));
-    
-   
     strcpy((char *)buf,(char *)packetBaseJson(msgBuf,1));
 
     len = strlen((const char*)buf);
@@ -300,22 +306,70 @@ SYSERRORCODE_E OpenDoor ( uint8_t* msgBuf )
     
     log_d("gSectorBuff = %d\r\n",sizeof(gSectorBuff));
 
-    log_d("======OpenDoor after = %3d%======\r\n",mem_perused(SRAMIN));
-    
+    if(1 == type)
+    {
+        ptReaderBuf->devID = READER1; 
+        ptReaderBuf->mode = REMOTE_OPEN_MODE;            
 
-    ptReaderBuf->devID = READER1; 
-    ptReaderBuf->mode = REMOTE_OPEN_MODE;            
+    	/* 使用消息队列实现指针变量的传递 */
+    	if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+    				 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+    				 (TickType_t)10) != pdPASS )
+    	{
+    //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+            log_d("send REMOTE_OPEN_MODE!\r\n"); 
+            //发送卡号失败蜂鸣器提示
+            //或者是队列满                
+        }      
+    }
+    else if(2 == type)
+    {
+        ptReaderBuf->devID = READER2; 
+        ptReaderBuf->mode = REMOTE_OPEN_MODE;            
 
-	/* 使用消息队列实现指针变量的传递 */
-	if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
-				 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
-				 (TickType_t)10) != pdPASS )
-	{
-//                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
-        log_d("send REMOTE_OPEN_MODE!\r\n"); 
-        //发送卡号失败蜂鸣器提示
-        //或者是队列满                
-    }     
+    	/* 使用消息队列实现指针变量的传递 */
+    	if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+    				 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+    				 (TickType_t)10) != pdPASS )
+    	{
+    //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+            log_d("send REMOTE_OPEN_MODE!\r\n"); 
+            //发送卡号失败蜂鸣器提示
+            //或者是队列满                
+        }      
+    }
+    else if(0 == type)
+    {
+        ptReaderBuf->devID = READER1; 
+        ptReaderBuf->mode = REMOTE_OPEN_MODE;            
+
+    	/* 使用消息队列实现指针变量的传递 */
+    	if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+    				 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+    				 (TickType_t)10) != pdPASS )
+    	{
+    //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+            log_d("send REMOTE_OPEN_MODE!\r\n"); 
+            //发送卡号失败蜂鸣器提示
+            //或者是队列满                
+        }    
+
+        ptReaderBuf->devID = READER2; 
+        ptReaderBuf->mode = REMOTE_OPEN_MODE;            
+
+    	/* 使用消息队列实现指针变量的传递 */
+    	if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+    				 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+    				 (TickType_t)10) != pdPASS )
+    	{
+    //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+            log_d("send REMOTE_OPEN_MODE!\r\n"); 
+            //发送卡号失败蜂鸣器提示
+            //或者是队列满                
+        }            
+    }
+
+   
 
 #ifdef DEBUG_PRINT
     TestFlash(CARD_MODE);
@@ -886,13 +940,21 @@ static SYSERRORCODE_E RemoteOptDev ( uint8_t* msgBuf )
 {
     SYSERRORCODE_E result = NO_ERR;
     uint8_t buf[MQTT_TEMP_LEN] = {0};
+    uint8_t tmp[4] = {0};    
     uint16_t len = 0;
+    int type = -1;
+    
     READER_BUFF_STRU *ptReaderBuf = &gReaderMsg;     
 
     if(!msgBuf)
     {
         return STR_EMPTY_ERR;
     }
+
+    //2.获取开门动作 
+    memset(tmp,0x00,sizeof(tmp));
+    strcpy((char *)tmp,(const char *)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"doorOption",1));
+    log_d("doorOption = %s,len = %d\r\n",tmp,strlen((const char*)tmp));    
     
     strcpy((char *)buf,(const char*)packetBaseJson(msgBuf,1));
 
@@ -902,19 +964,68 @@ static SYSERRORCODE_E RemoteOptDev ( uint8_t* msgBuf )
 
     mqttSendData(buf,len);      
 
-    ptReaderBuf->devID = READER1; 
-    ptReaderBuf->mode = REMOTE_OPEN_MODE;            
-
-    /* 使用消息队列实现指针变量的传递 */
-    if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
-                 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
-                 (TickType_t)10) != pdPASS )
+    if(1 == type)
     {
-//                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
-        log_d("send REMOTE_OPEN_MODE!\r\n"); 
-        //发送卡号失败蜂鸣器提示
-        //或者是队列满                
-    }     
+        ptReaderBuf->devID = READER1; 
+        ptReaderBuf->mode = REMOTE_OPEN_MODE;            
+
+    	/* 使用消息队列实现指针变量的传递 */
+    	if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+    				 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+    				 (TickType_t)10) != pdPASS )
+    	{
+    //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+            log_d("send REMOTE_OPEN_MODE!\r\n"); 
+            //发送卡号失败蜂鸣器提示
+            //或者是队列满                
+        }      
+    }
+    else if(2 == type)
+    {
+        ptReaderBuf->devID = READER2; 
+        ptReaderBuf->mode = REMOTE_OPEN_MODE;            
+
+    	/* 使用消息队列实现指针变量的传递 */
+    	if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+    				 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+    				 (TickType_t)10) != pdPASS )
+    	{
+    //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+            log_d("send REMOTE_OPEN_MODE!\r\n"); 
+            //发送卡号失败蜂鸣器提示
+            //或者是队列满                
+        }      
+    }
+    else if(0 == type)
+    {
+        ptReaderBuf->devID = READER1; 
+        ptReaderBuf->mode = REMOTE_OPEN_MODE;            
+
+    	/* 使用消息队列实现指针变量的传递 */
+    	if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+    				 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+    				 (TickType_t)10) != pdPASS )
+    	{
+    //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+            log_d("send REMOTE_OPEN_MODE!\r\n"); 
+            //发送卡号失败蜂鸣器提示
+            //或者是队列满                
+        }    
+
+        ptReaderBuf->devID = READER2; 
+        ptReaderBuf->mode = REMOTE_OPEN_MODE;            
+
+    	/* 使用消息队列实现指针变量的传递 */
+    	if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+    				 (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+    				 (TickType_t)10) != pdPASS )
+    	{
+    //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+            log_d("send REMOTE_OPEN_MODE!\r\n"); 
+            //发送卡号失败蜂鸣器提示
+            //或者是队列满                
+        }            
+    }   
 
 #ifdef DEBUG_PRINT
     TestFlash(CARD_MODE);

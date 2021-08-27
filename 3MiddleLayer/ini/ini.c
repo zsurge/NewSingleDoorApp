@@ -561,18 +561,18 @@ void initDevBaseParam(void)
         //设备状态为启用状态
         gDevBaseParam.deviceState.iFlag = DEVICE_ENABLE;  
         
-        gDevBaseParam.deviceCode.downLoadFlag.iFlag = DEFAULT_INIVAL;  
+        gDevBaseParam.deviceCode.downLoadFlag.iFlag = STATIC_IP;  
         
         calcMac ( (unsigned char*)mac);
         bcd2asc ( (unsigned char*)asc, (unsigned char*)mac, 12, 0 );
         Insertchar ( asc,temp,':' );
         
 
-        gDevBaseParam.localIP.ipMode.iMode = DHCP_IP;
+        gDevBaseParam.localIP.ipMode.iMode = STATIC_IP;
         
         gDevBaseParam.localIP.ip[0] = 192;
         gDevBaseParam.localIP.ip[1] = 168;
-        gDevBaseParam.localIP.ip[2] = 0;
+        gDevBaseParam.localIP.ip[2] = 10;
         gDevBaseParam.localIP.ip[3] = 176;
         
         gDevBaseParam.localIP.netMask[0] = 255;
@@ -582,7 +582,7 @@ void initDevBaseParam(void)
         
         gDevBaseParam.localIP.gateWay[0] = 192;
         gDevBaseParam.localIP.gateWay[1] = 168;
-        gDevBaseParam.localIP.gateWay[2] = 0;
+        gDevBaseParam.localIP.gateWay[2] = 10;
         gDevBaseParam.localIP.gateWay[3] = 1;
 
 //        strcpy(temp,"00:00:00:58:36:39");

@@ -25,6 +25,8 @@
 #include <time.h>
 #include "tool.h"
 #include "eth_cfg.h"
+#include "led_task.h"
+
 
 
 __lwip_dev lwipdev;						//lwip控制结构体
@@ -180,6 +182,8 @@ u8 lwip_comm_init ( void )
     	log_d ( "静态IP地址........................%d.%d.%d.%d\r\n",lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3] );
     	log_d ( "子网掩码..........................%d.%d.%d.%d\r\n",lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3] );
     	log_d ( "默认网关..........................%d.%d.%d.%d\r\n",lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3] );
+    	
+    	
     }
 
 	Netif_Init_Flag=netif_add ( &lwip_netif,&ipaddr,&netmask,&gw,NULL,&ethernetif_init,&tcpip_input ); //向网卡列表中添加一个网口
@@ -238,6 +242,7 @@ u8 lwip_comm_init ( void )
 	/* Set the link callback function, this function is called on change of link status*/
 	netif_set_link_callback(&lwip_netif, ETH_link_callback);
 
+    log_d("lwip_comm_init finish\r\n");
     
 	return 0;//操作OK.
 }
@@ -340,12 +345,15 @@ void StartEthernet(void)
 {
 	//* 初始化LwIP
 	lwip_comm_init();
+
+	printf("gDevBaseParam.localIP.ipMode.iMode = %x\r\n",gDevBaseParam.localIP.ipMode.iMode);
 	
     if(gDevBaseParam.localIP.ipMode.iMode == DHCP_IP)
     {
         
         StartvLwipDHCPTask(&lwip_netif);
     }
+
 	
 	StartvLwipComTask(&lwip_netif);
 }
