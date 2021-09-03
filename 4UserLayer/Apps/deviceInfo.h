@@ -33,7 +33,7 @@
  #define DEFAULT_DEV_NAME "SMARTDOOR"
 
  #define DEVICE_DISABLE 0x00
- #define DEVICE_ENABLE  0x5555AAAA
+ #define DEVICE_ENABLE  0x55
 
  #define CARD_UNORDERED 0x00
  #define CARD_ORDERLY  0x55AA55AA
@@ -201,6 +201,21 @@ typedef struct IP_CONFIG
      DOOR_TYPE_TWO           //二门门禁
  }DOOR_TYPE;
 
+  //设备生产状态
+ typedef enum {
+     UPLOAD_MAC = 0,      //一门门禁
+     DWLOAD_KEY,           //二门门禁
+     DWLOAD_SN    
+ }PRODUCT_STATUS;
+
+typedef struct DEVICE_STATUS
+{
+    unsigned char isEnable;    
+    unsigned char isUpLoadMac;
+    unsigned char isDwLoadKey;    
+    unsigned char isDwLoadSn;       
+}DEVICE_STATUS_STRU;
+
  
 typedef struct DEV_BASE_PARAM
 {
@@ -212,7 +227,7 @@ typedef struct DEV_BASE_PARAM
     DOOR_TYPE doorType;         //一门/两门   
     
     //设备状态
-    DEVICE_SWITCH deviceState; //\x55\xAA\x55\xBB 设备可用  
+    DEVICE_STATUS_STRU deviceState; 
     
     //SN
     DEVICE_ID_STRU deviceCode;
@@ -237,12 +252,20 @@ typedef struct RECORDINDEX
     volatile uint32_t accessRecoIndex;   //当前已存储了多少通行记录
 }RECORDINDEX_STRU;
 
+typedef struct PUBLICKEY
+{
+    uint8_t pubKey[40];
+    uint8_t devKey[24];          
+}PUBLICKEY_STRU;
+
 /*----------------------------------------------*
  * 模块级变量                                   *
  *----------------------------------------------*/
 extern TEMPLATE_PARAM_STRU gtemplateParam;
 extern DEV_BASE_PARAM_STRU gDevBaseParam;
 extern RECORDINDEX_STRU gRecordIndex;
+extern PUBLICKEY_STRU gPublicKey;
+
 
 
 /*----------------------------------------------*

@@ -52,6 +52,8 @@
 #define DEV_FACTORY_SUBSCRIBE	"/smartCloud/production/msg/"    
 
 
+
+
 extern int gConnectStatus;
 
 

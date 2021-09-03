@@ -220,8 +220,6 @@ static void vTaskLed ( void* pvParameters )
 
 	while ( 1 )
 	{
-
-
 		deal_pc_procotol();
 		deal_pc_data();
 

@@ -33,6 +33,7 @@
 
 
 static void ackUp ( void );
+static void upLoadMac(void);
 
 //static void showTask ( void );
 
@@ -125,10 +126,6 @@ log_d("2 gDevBaseParam.mqttTopic.subscribe = %s\r\n",gDevBaseParam.mqttTopic.sub
 log_d("2 gDevBaseParam.deviceCode.qrSn = %s,gDevBaseParam.deviceCode.qrSnLen = %d\r\n",gDevBaseParam.deviceCode.qrSn,gDevBaseParam.deviceCode.qrSnLen);
 
 
-//	ReadLocalDevSn();
-
-//    strcpy(data.clientID.cstring,gDeviceId.deviceSn);
-//    strcat(data.clientID.cstring,time_to_timestamp());
     
 	data.clientID.cstring = gDevBaseParam.deviceCode.deviceSn;       
 	data.keepAliveInterval = KEEPLIVE_TIME;         //保持活跃
@@ -254,6 +251,7 @@ log_d("2 gDevBaseParam.deviceCode.qrSn = %s,gDevBaseParam.deviceCode.qrSnLen = %
 					ackUp();
 				}
 
+				upLoadMac();
 				break;
 			//订阅确认 订阅请求报文确认
 			case SUBACK://9
@@ -436,6 +434,15 @@ static void ackUp ( void )
     exec_proc("88881","");	
 }
 
+
+static void upLoadMac(void)
+{
+    //还未上送MAC，待上送
+    if(gDevBaseParam.deviceState.isUpLoadMac == DEVICE_DISABLE)
+    {
+        exec_proc("30004"," ");
+    }
+}
 
 
 //{\"data\":{\"currentLayer\":2,\"identification\":\"20-6-1582360859332\",\"purposeLayer\":9,\"status\":\"1\"},\"commandCode\":\"3010\",\"deviceCode\":\"5056E1CB67136EA3E1B0\"}

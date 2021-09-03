@@ -65,9 +65,14 @@
 #define RECORD_INDEX_SIZE   (64)
 #define RECORD_INDEX_ADDR   (DEVICE_BASE_PARAM_ADDR+DEVICE_BASE_PARAM_SIZE) //122
 
+//密钥存储长度及地址
+#define PUBKEY_INDEX_SIZE   (64)
+#define PUBKEY_INDEX_ADDR   (RECORD_INDEX_ADDR+PUBKEY_INDEX_SIZE) //122
+
+
 //参数的存储地址
-#define DEVICE_TEMPLATE_PARAM_SIZE   (1024*2)
-#define DEVICE_TEMPLATE_PARAM_ADDR  (RECORD_INDEX_ADDR+RECORD_INDEX_SIZE) //参数存储分配2K空间
+#define DEVICE_TEMPLATE_PARAM_SIZE   (1984)
+#define DEVICE_TEMPLATE_PARAM_ADDR  (PUBKEY_INDEX_ADDR+PUBKEY_INDEX_SIZE) //参数存储分配2K空间
 
 
 //FLASH空间分配
@@ -103,7 +108,7 @@ void RestoreDefaultSetting(void);
 
 void SystemUpdate(void);
 
-void SaveDevState(uint32_t     state);
+void SaveDevState(uint8_t     state);
 
 //保存模板信息
 SYSERRORCODE_E saveTemplateParam(uint8_t *jsonBuff);
@@ -115,12 +120,16 @@ uint8_t optTemplateParam(void *stParam,uint8_t mode,uint32_t len,uint32_t addr);
 void initDevBaseParam(void);
 uint8_t optDevBaseParam(void *stParam,uint8_t mode,uint32_t len,uint32_t addr);
 
+uint8_t optPubKey(void *stParam,uint8_t mode,uint32_t len,uint32_t addr);
+
+
 uint8_t optRecordIndex(RECORDINDEX_STRU *recoIndex,uint8_t mode);
 
 void ClearDevBaseParam(void);
 void ClearTemplateParam(void);
 void ClearRecordIndex(void);
 void clearTemplateFRAM(void);
+void ClearPubKey(void);
 
 
 void eraseHeadSector(void);

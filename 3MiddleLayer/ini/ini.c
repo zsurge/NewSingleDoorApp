@@ -30,6 +30,8 @@
 TEMPLATE_PARAM_STRU gtemplateParam;
 DEV_BASE_PARAM_STRU gDevBaseParam;
 RECORDINDEX_STRU gRecordIndex;
+PUBLICKEY_STRU gPublicKey;
+
 
 HEADINFO_STRU gSectorBuff[1024] = {0};
 
@@ -76,13 +78,13 @@ void SystemUpdate(void)
     }
 }
 
-void SaveDevState(uint32_t state)
+void SaveDevState(uint8_t state)
 {
     uint8_t ret = 0;
     //记录SN
     ClearDevBaseParam();
     optDevBaseParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
-    gDevBaseParam.deviceState.iFlag = state; 
+    gDevBaseParam.deviceState.isEnable = state; 
     ret = optDevBaseParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
 
     if(ret != 1)
@@ -559,7 +561,10 @@ void initDevBaseParam(void)
 	    gDevBaseParam.cardReaderType = CARD_READER_RS485;
 	    
         //设备状态为启用状态
-        gDevBaseParam.deviceState.iFlag = DEVICE_ENABLE;  
+        gDevBaseParam.deviceState.isEnable = DEVICE_ENABLE;  
+        gDevBaseParam.deviceState.isUpLoadMac = DEVICE_DISABLE;
+        gDevBaseParam.deviceState.isDwLoadKey = DEVICE_DISABLE;
+        gDevBaseParam.deviceState.isDwLoadSn = DEVICE_DISABLE;
         
         gDevBaseParam.deviceCode.downLoadFlag.iFlag = STATIC_IP;  
         
@@ -988,6 +993,16 @@ DOOR_TYPE getDoorType()
 
 
 
+void ClearPubKey(void)
+{
+	memset(&gPublicKey,0x00,sizeof(PUBLICKEY_STRU)); 
+}
+
+
+uint8_t optPubKey(void *stParam,uint8_t mode,uint32_t len,uint32_t addr)
+{
+    return opParam(stParam,mode,len,addr); 
+}
 
 
 

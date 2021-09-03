@@ -95,6 +95,11 @@ static SYSERRORCODE_E RemoteResetDev ( uint8_t* msgBuf );//远程重启
 
 //static SYSERRORCODE_E ReturnDefault ( uint8_t* msgBuf ); //返回默认消息
 
+static SYSERRORCODE_E upMac( uint8_t* msgBuf );//上传MAC地址
+static SYSERRORCODE_E downPubKey( uint8_t* msgBuf );//平台下发三元组信息
+
+
+
 
 typedef SYSERRORCODE_E ( *cmd_fun ) ( uint8_t *msgBuf ); 
 
@@ -116,7 +121,9 @@ const CMD_HANDLE_T CmdList[] =
 	{"1026", GetDevInfo},  
 	{"10005", DelCardSingle},  
 	{"10010", RemoteResetDev}, 
-	{"30001", SetLocalSn},
+	{"30001", SetLocalSn},	
+	{"30003", downPubKey},
+	{"30004", upMac},
     {"3002", GetServerIp},
     {"10001", GetTemplateParam},
     {"10004", DownLoadCardID},   
@@ -193,6 +200,21 @@ static SYSERRORCODE_E RemoteResetDev ( uint8_t* msgBuf )//远程重启
     mqttSendData(buf,len);    
      
     NVIC_SystemReset(); 
+    
+    return NO_ERR;
+}
+
+//上传MAC地址
+static SYSERRORCODE_E upMac( uint8_t* msgBuf )
+{
+    uint8_t buf[64] = {0};
+    uint8_t bufLen = 0;
+    sprintf((char*)buf,"{\"commandCode\":\"30004\",\"mac\":\"%s\"}",gDevBaseParam.deviceCode.deviceSn);
+    bufLen = strlen((const char*)buf);
+
+    log_d("upMac = %s,len = %d\r\n",buf,bufLen);
+    
+    //mqttSendData(buf,bufLen);  
     
     return NO_ERR;
 }
@@ -1136,6 +1158,13 @@ static SYSERRORCODE_E SetLocalSn( uint8_t* msgBuf )
 
 
 }
+
+//平台下发三元组信息
+static SYSERRORCODE_E downPubKey( uint8_t* msgBuf )
+{
+
+}
+
 
 //void sendHeartbeat(void)
 //{
