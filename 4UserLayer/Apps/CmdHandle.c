@@ -97,6 +97,8 @@ static SYSERRORCODE_E RemoteResetDev ( uint8_t* msgBuf );//远程重启
 
 static SYSERRORCODE_E upMac( uint8_t* msgBuf );//上传MAC地址
 static SYSERRORCODE_E downPubKey( uint8_t* msgBuf );//平台下发三元组信息
+static SYSERRORCODE_E registerDev(uint8_t *msgBuf); //设备注册验证
+static SYSERRORCODE_E respRegisterDev(uint8_t *msgBuf); //设备注册验证响应
 
 
 
@@ -120,7 +122,8 @@ const CMD_HANDLE_T CmdList[] =
 	{"1017", UpgradeAck},
 	{"1026", GetDevInfo},  
 	{"10005", DelCardSingle},  
-	{"10010", RemoteResetDev}, 
+	{"10010", RemoteResetDev},
+	{"11111",  respRegisterDev},
 	{"30001", SetLocalSn},	
 	{"30003", downPubKey},
 	{"30004", upMac},
@@ -131,7 +134,8 @@ const CMD_HANDLE_T CmdList[] =
     {"10003", ClearUserInof},   
     {"10002", EnableDev}, //同绑定
     {"88888", SetLocalTime},
-    {"88881", getRemoteTime}
+    {"88881", getRemoteTime},
+    {"44444", registerDev}
 };
 
 
@@ -214,7 +218,7 @@ static SYSERRORCODE_E upMac( uint8_t* msgBuf )
 
     log_d("upMac = %s,len = %d\r\n",buf,bufLen);
     
-    //mqttSendData(buf,bufLen);  
+    mqttSendData(buf,bufLen);  
     
     return NO_ERR;
 }
@@ -274,7 +278,7 @@ int mqttSendData(uint8_t *payload_out,uint16_t payload_out_len)
    { 
        topicString.cstring = gDevBaseParam.mqttTopic.publish;       //属性上报 发布
 
-       log_d("payloadlen = %d,payload = %s\r\n",payload_out_len,payload_out);
+       log_d("payloadlen = %d,payload = %s,topicString = %s\r\n",payload_out_len,payload_out,topicString.cstring);
 
        len = MQTTSerialize_publish((unsigned char*)buf, buflen, 0, req_qos, retained, msgid, topicString, payload_out, payload_out_len);//发布消息
        rc = transport_sendPacketBuffer(gMySock, (unsigned char*)buf, len);
@@ -316,7 +320,7 @@ SYSERRORCODE_E OpenDoor ( uint8_t* msgBuf )
     strcpy((char *)tmp,(const char *)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"doorOption",1));
     log_d("doorOption = %s,len = %d\r\n",tmp,strlen((const char*)tmp));
 
-    type = atoi(tmp);
+    type = atoi((const char*)tmp);
     
     strcpy((char *)buf,(char *)packetBaseJson(msgBuf,1));
 
@@ -1142,6 +1146,7 @@ static SYSERRORCODE_E SetLocalSn( uint8_t* msgBuf )
 
     gDevBaseParam.deviceCode.qrSnLen = strlen((const char*)deviceID);
     gDevBaseParam.deviceCode.deviceSnLen = strlen((const char*)deviceCode);
+    
     memcpy(gDevBaseParam.deviceCode.deviceSn,deviceCode,gDevBaseParam.deviceCode.deviceSnLen);
     memcpy(gDevBaseParam.deviceCode.qrSn,deviceID,gDevBaseParam.deviceCode.qrSnLen);
 
@@ -1162,7 +1167,120 @@ static SYSERRORCODE_E SetLocalSn( uint8_t* msgBuf )
 //平台下发三元组信息
 static SYSERRORCODE_E downPubKey( uint8_t* msgBuf )
 {
+    SYSERRORCODE_E result = NO_ERR;
+    uint8_t buf[MQTT_TEMP_LEN] = {0};
+    uint8_t deviceSecret[32] = {0};//设备key
+    uint8_t productKey[20] = {0};//产品key
+    uint8_t deviceCode[32] = {0};//设备ID
+    uint8_t deviceID[5] = {0};//QRID    
 
+    uint16_t len = 0;
+    
+    if(!msgBuf)
+    {
+        return STR_EMPTY_ERR;
+    }
+
+    strcpy((char *)deviceSecret,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"deviceSecret",0));
+    strcpy((char *)productKey,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"productKey",0));
+    strcpy((char *)deviceCode,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"deviceCode",0));
+    strcpy((char *)deviceID,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"deviceID",0));
+
+    //记录KEY和SN
+    ClearDevBaseParam();
+    optDevBaseParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);    
+
+    gDevBaseParam.deviceState.isUpLoadMac = DEVICE_ENABLE;    
+    gDevBaseParam.deviceCode.qrSnLen = strlen((const char*)deviceID);
+    gDevBaseParam.deviceCode.deviceSnLen = strlen((const char*)deviceCode);
+    
+    memcpy(gDevBaseParam.deviceCode.deviceSn,deviceCode,gDevBaseParam.deviceCode.deviceSnLen);    
+    memcpy(gDevBaseParam.deviceCode.qrSn,deviceID,gDevBaseParam.deviceCode.qrSnLen);
+    memcpy(gDevBaseParam.devKey.pubKey,deviceSecret,strlen((const char*)deviceSecret));
+    memcpy(gDevBaseParam.devKey.productKey,productKey,strlen((const char*)productKey));
+
+    gDevBaseParam.deviceCode.downLoadFlag.iFlag = DEFAULT_INIVAL;
+
+    result = modifyJsonItem(msgBuf,"status","1",0,buf);
+
+    if(result != NO_ERR)
+    {
+        return result;
+    }
+
+    len = strlen((const char*)buf);
+
+    log_d("downPubKey len = %d,buf = %s,  DEV_BASE_PARAM_STRU = %d\r\n",len,buf,sizeof(DEV_BASE_PARAM_STRU));
+
+    mqttSendData(buf,len);    
+
+    
+
+    strcpy ( gDevBaseParam.mqttTopic.publish,DEV_REG_PUBLISH );
+    strcpy ( gDevBaseParam.mqttTopic.subscribe,DEV_REG_SUBSCRIBE );    
+    strcat ( gDevBaseParam.mqttTopic.subscribe,(const char*)deviceCode );     
+    optDevBaseParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR); 
+
+    gUpdateDevSn = 1;
+
+    log_d("1 deviceCode.deviceSn = %s\r\n",gDevBaseParam.deviceCode.deviceSn);
+    log_d("1 mqttTopic.publish = %s\r\n",gDevBaseParam.mqttTopic.publish);
+    log_d("1 mqttTopic.subscribe = %s\r\n",gDevBaseParam.mqttTopic.subscribe);       
+    log_d("1 deviceCode.qrSn = %s,deviceCode.qrSnLen = %d\r\n",gDevBaseParam.deviceCode.qrSn,gDevBaseParam.deviceCode.qrSnLen);
+    log_d("1 devKey.pubKey = %s\r\n",gDevBaseParam.mqttTopic.subscribe);       
+    log_d("1 devKey.productKey = %s,deviceCode.qrSnLen = %s\r\n",gDevBaseParam.devKey.pubKey,gDevBaseParam.devKey.productKey);
+    
+    
+    return result;
+
+}
+
+
+//设备注册验证
+static SYSERRORCODE_E registerDev(uint8_t *msgBuf) 
+{
+    SYSERRORCODE_E result = NO_ERR;
+    uint8_t jsonbuff[400] = {0};
+    int len = 0;
+
+    packetRegister(jsonbuff);
+
+    len = strlen ( ( const char* ) jsonbuff );
+    log_d ( "send = %d,buff = %s\r\n",len,jsonbuff );
+    
+    len = mqttSendData ( jsonbuff,len );   
+
+    return result;
+}
+
+//设备注册验证响应
+static SYSERRORCODE_E respRegisterDev(uint8_t *msgBuf)
+{
+    SYSERRORCODE_E result = NO_ERR;
+    uint8_t statusBuf[4] = {0};
+    int ret = 0;
+    
+    strcpy((char *)statusBuf,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",1));
+    ret = atoi((const char*)statusBuf);
+
+    if(ret != 1)
+    {
+        log_d("register success\r\n");
+        return REGISTER_ERR;
+    }
+
+    //记录KEY和SN
+    ClearDevBaseParam();
+    optDevBaseParam(&gDevBaseParam,READ_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+ 
+    gDevBaseParam.deviceState.isDwLoadKey = DEVICE_ENABLE;    
+   
+    strcpy ( gDevBaseParam.mqttTopic.publish,DEVICE_PUBLISH );
+    strcpy ( gDevBaseParam.mqttTopic.subscribe,DEVICE_SUBSCRIBE );    
+    strcat ( gDevBaseParam.mqttTopic.subscribe,(const char*)gDevBaseParam.deviceCode.deviceSn);     
+    optDevBaseParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    return result;
 }
 
 

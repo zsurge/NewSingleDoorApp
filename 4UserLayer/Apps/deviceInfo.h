@@ -29,7 +29,7 @@
  #define UPGRADE_URL_MAX_LEN    300
  #define MQTT_TOPIC_MAX_LEN     128
 
- #define DEFAULT_INIVAL 0x55AA55BB
+ #define DEFAULT_INIVAL 0x55AA55AA
  #define DEFAULT_DEV_NAME "SMARTDOOR"
 
  #define DEVICE_DISABLE 0x00
@@ -176,6 +176,7 @@ typedef struct IP_CONFIG
     uint8_t ip[4];
     uint8_t netMask[4];
     uint8_t gateWay[4];
+    uint8_t mac[18];
     //设置IP状态
     IP_MODE ipMode; 
 }IP_CONFIG_STRU;
@@ -216,7 +217,12 @@ typedef struct DEVICE_STATUS
     unsigned char isDwLoadSn;       
 }DEVICE_STATUS_STRU;
 
- 
+typedef struct PUBLICKEY
+{
+    uint8_t pubKey[40];
+    uint8_t productKey[24];          
+}PUBLICKEY_STRU;
+
 typedef struct DEV_BASE_PARAM
 {
     //程序模式
@@ -225,6 +231,9 @@ typedef struct DEV_BASE_PARAM
     CARD_READER_TYPE cardReaderType; //韦根/485
 
     DOOR_TYPE doorType;         //一门/两门   
+
+    //设备KYE
+    PUBLICKEY_STRU devKey;
     
     //设备状态
     DEVICE_STATUS_STRU deviceState; 
@@ -252,11 +261,7 @@ typedef struct RECORDINDEX
     volatile uint32_t accessRecoIndex;   //当前已存储了多少通行记录
 }RECORDINDEX_STRU;
 
-typedef struct PUBLICKEY
-{
-    uint8_t pubKey[40];
-    uint8_t devKey[24];          
-}PUBLICKEY_STRU;
+
 
 /*----------------------------------------------*
  * 模块级变量                                   *
@@ -264,7 +269,6 @@ typedef struct PUBLICKEY
 extern TEMPLATE_PARAM_STRU gtemplateParam;
 extern DEV_BASE_PARAM_STRU gDevBaseParam;
 extern RECORDINDEX_STRU gRecordIndex;
-extern PUBLICKEY_STRU gPublicKey;
 
 
 

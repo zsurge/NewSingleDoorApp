@@ -152,7 +152,7 @@ uint8_t* GetJsonItem ( const uint8_t* jsonBuff,const uint8_t* item,uint8_t isSub
 	cJSON* root,*json_item,*dataObj;
 	
 
-    log_d("<<<<%s>>>>\r\n",jsonBuff);
+//    log_d("<<<<%s>>>>\r\n",jsonBuff);
 
     if(strlen((const char*)jsonBuff) == 0 || strlen((const char*)jsonBuff) > JSON_ITEM_MAX_LEN )
     {
@@ -908,141 +908,7 @@ void GetCardArray ( const uint8_t* jsonBuff,const uint8_t* item,uint8_t *num,uin
     my_free(root);
 }
 
-#if 0
-void GetCardArray ( const uint8_t* jsonBuff,const uint8_t* item,uint8_t *num,uint8_t** descBuff)
-{
-//    static uint8_t** result; 
-    uint8_t** result; 
-    
-    cJSON* root,*json_item;
-    cJSON* arrayElement;
-    int tmpArrayNum = 0;
-    int i = 0;
-    
-    root = cJSON_Parse ( ( char* ) jsonBuff );    //解析数据包
-    
-    if ( !root )
-    {
-        log_d ( "Error before: [%s]\r\n",cJSON_GetErrorPtr() );
-        cJSON_Delete(root);
-        my_free(root);
-          return ;      
-        //return NULL;
-    }
-    else
-    {
-        //根据协议，默认所有的子项是data
-        json_item = cJSON_GetObjectItem ( root, "cardNo" );  
-        
-        if( json_item->type == cJSON_Array )
-        {
-            tmpArrayNum = cJSON_GetArraySize(json_item);
-            
-            log_d("cardArrayNum = %d\r\n",tmpArrayNum);
-            
-            //每个人最多20张卡
-            if(tmpArrayNum > 20)
-            {
-                tmpArrayNum = 20;
-            }
 
-            result = (uint8_t **)my_malloc(tmpArrayNum*sizeof(uint8_t *));
-
-            if(result == NULL)
-            {
-                *num = 0;
-                log_d("create array error\r\n");
-                cJSON_Delete(root);
-                my_free(root);
-                
-                for (i = 0; i < tmpArrayNum; i++)
-                {
-                    my_free(result[i]);
-                }    
-                my_free(result);
-        
-          return ;      
-        //return NULL;
-            }
-
-            *num = tmpArrayNum;
-            
-            for (i = 0; i < tmpArrayNum; i++)
-            {
-                result[i] = (uint8_t *)my_malloc(8 * sizeof(uint8_t));
-            }            
-
-            for(i=0;i<tmpArrayNum;i++)
-            {
-                arrayElement = cJSON_GetArrayItem(json_item, i);                 
-                strcpy ((char*)result[i], arrayElement->valuestring ); 
-                log_d("result :%d = %s\r\n",i,result[i]); 
-            }
-
-        }
-        else if( json_item->type == cJSON_String )
-        {
-            //一般走到这里，卡号就是空的
-            if(strlen((const char*)json_item->valuestring) == 0)
-            {
-                 *num = 0;
-                log_d("card no is empty \r\n");
-                cJSON_Delete(root);
-                my_free(root);
-                
-          return ;      
-        //return NULL;
-            }
-        
-            tmpArrayNum = 1;
-            *num = tmpArrayNum;
-
-            result[0] = (uint8_t *)my_malloc(8 * sizeof(uint8_t)); 
-            
-			if ( strlen ( json_item->valuestring ) > 8 )
-			{
-				memcpy ( result[0], json_item->valuestring,8 );
-			}
-			else
-			{
-			    strcpy ( (char*)result[0], json_item->valuestring ); 
-			}
-
-			log_d ( "json_item =  %s\r\n",json_item->valuestring );
-
-            
-            
-        }
-        else
-        {
-            *num = 0;
-            log_d ( "can't parse json buff\r\n" );
-            cJSON_Delete(root);
-            my_free(root);
-            
-          return ;      
-        //return NULL;
-        }
-        
-    } 
-
-    descBuff = result;
-
-    memcpy(descBuff,result,sizeof(uint8_t)*tmpArrayNum*8);
-    
-    cJSON_Delete(root);
-    
-    for (i = 0; i < tmpArrayNum; i++)
-    {
-        my_free(result[i]);
-    }    
-    my_free(result);    
-    
-    my_free(root);
-
-}
-
-#endif 
 
 uint8_t packetCard(uint8_t *cardID,uint8_t *descJson)
 { 
@@ -1115,6 +981,125 @@ uint8_t packetCard(uint8_t *cardID,uint8_t *descJson)
 }
 
 
+uint8_t packetRegister(uint8_t *descJson)
+{
+    SYSERRORCODE_E result = NO_ERR;
+	cJSON* root,*newRoot;
+    char *tmpBuf;
+    uint8_t text[200] = {0};
+    uint8_t asc[400] = {0};
+    uint8_t bcdBuf[150] = {0};
+    int len = 0;
+    int tmp_len = 0;
+    uint8_t key[16] = {0};
+    uint8_t i = 0;
+
+
+    root = cJSON_CreateObject();    
+    newRoot = cJSON_CreateObject();
+    
+    if(!root || !newRoot )
+    {
+        log_d ( "Error before: [%s]\r\n",cJSON_GetErrorPtr() );
+        cJSON_Delete(root);
+        cJSON_Delete(newRoot);
+        my_free(tmpBuf);            
+        tmpBuf=NULL;        
+		return CJSON_CREATE_ERR;
+    }
+    
+
+    cJSON_AddStringToObject(root, "productKey", (const char*)gDevBaseParam.devKey.productKey);
+    log_d("productKey = %s\r\n",gDevBaseParam.devKey.productKey);    
+
+    cJSON_AddStringToObject(root, "deviceCode",gDevBaseParam.deviceCode.deviceSn);
+    log_d("deviceSn = %s\r\n",gDevBaseParam.deviceCode.deviceSn);        
+    
+    cJSON_AddStringToObject(root, "ip",(const char*)gDevinfo.GetIP());
+    log_d("ip = %s\r\n",gDevinfo.GetIP());   
+    
+    cJSON_AddStringToObject(root, "firmwareVersions",(const char*)gDevinfo.SoftwareVersion);
+    log_d("firmwareVersions = %s\r\n",gDevinfo.SoftwareVersion);   
+    
+    cJSON_AddStringToObject(root, "mac",(const char*)gDevBaseParam.localIP.mac);
+    log_d("mac = %s\r\n",gDevBaseParam.localIP.mac); 
+
+    tmpBuf = cJSON_PrintUnformatted(root); 
+
+    if(!tmpBuf)
+    {
+        log_d("cJSON_PrintUnformatted error \r\n");
+        cJSON_Delete(root);
+        my_free(tmpBuf);            
+        tmpBuf=NULL;        
+        
+        return CJSON_FORMAT_ERR;
+    }  
+
+    len = strlen((const char*)tmpBuf);
+
+    log_d("tmpbuf = %s,len=%d\r\n",tmpBuf,len);
+
+    memcpy(bcdBuf,tmpBuf,len);
+    
+    //补齐16的倍数    
+    tmp_len = 16 * ( (len + 15) / 16 );
+    
+    for(i=len;i<tmp_len;i++)
+    {
+        bcdBuf[i] = 0x00;
+    }
+
+    
+//    dbh("bcdBuf",bcdBuf, tmp_len);
+
+    asc2bcd(key, gDevBaseParam.devKey.pubKey, 32, 1);
+
+    Des3_2(key,bcdBuf,tmp_len,text,0);
+    
+    dbh("Des3_2",text, tmp_len);
+    
+    bcd2asc(asc, text, tmp_len*2, 1);
+
+//    dbh("enc txt",text, tmp_len);
+
+    log_d("asc = %s,len=%d\r\n",asc,tmp_len*2);
+    cJSON_Delete(root);
+    
+
+    cJSON_AddStringToObject(newRoot, "deviceSecret", gDevBaseParam.devKey.pubKey);
+    log_d("deviceSecret = %s\r\n",gDevBaseParam.devKey.pubKey);    
+
+    cJSON_AddStringToObject(newRoot, "encryptionText",asc);
+    log_d("encryptionText = %s\r\n",asc);   
+
+
+    tmpBuf = cJSON_PrintUnformatted(newRoot); 
+
+    if(!tmpBuf)
+    {
+        log_d("cJSON_PrintUnformatted error \r\n");
+        cJSON_Delete(newRoot);
+        my_free(tmpBuf);            
+        tmpBuf=NULL;        
+        
+        return CJSON_FORMAT_ERR;
+    }  
+
+
+    len = strlen((const char*)tmpBuf);
+
+    log_d("tmpbuf = %s,len=%d\r\n",tmpBuf,len);    
+
+    strcpy((char *)descJson,tmpBuf);  
+    
+    cJSON_Delete(newRoot);
+    my_free(tmpBuf);
+    tmpBuf=NULL;        
+    
+    return result;
+
+}
 
 
 

@@ -53,7 +53,7 @@ const char* dataProcTaskName = "vDataProcTask";
 TaskHandle_t xHandleTaskDataProc = NULL;
 CMD_BUFF_STRU gCmd_buff = {0};
 
-static void getCard(uint8_t *src);
+//static void getCard(uint8_t *src);
 
 
 /*----------------------------------------------*
@@ -246,8 +246,8 @@ static void vTaskDataProcess ( void* pvParameters )
                         devID = ptMsg->devID;
                         gOpenDoorTimer.flag = 1;
                         gOpenDoorTimer.outTimer = 12000;
-                        gOpenDoorTimer.flag = 2;
-                        gOpenDoorTimer.outTimer = 12000;                        
+                        gOpenDoor2Timer.flag = 1;
+                        gOpenDoor2Timer.outTimer = 12000;                        
 					
 						devReturn = xQueueSend ( xCmdQueue,           /* 消息队列句柄 */
 						                         ( void* ) &devID,            /* 发送结构体指针变量ptReader的地址 */
@@ -298,8 +298,8 @@ static void vTaskDataProcess ( void* pvParameters )
 					devID = 1;
                     gOpenDoorTimer.flag = 1;
                     gOpenDoorTimer.outTimer = 12000;
-                    gOpenDoorTimer.flag = 2;
-                    gOpenDoorTimer.outTimer = 12000;  
+                    gOpenDoor2Timer.flag = 1;
+                    gOpenDoor2Timer.outTimer = 12000;  
 
 					devReturn = xQueueSend ( xCmdQueue,                 /* 消息队列句柄 */
 					                         ( void* ) &devID,             /* 发送结构体指针变量ptReader的地址 */

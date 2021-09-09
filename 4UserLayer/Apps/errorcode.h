@@ -51,6 +51,8 @@ typedef enum {
     //Î¤¸ù¶Á¿¨´íÎó´úÂë
     READ_ERR,
     INVALID_FLOOR,
+    //×¢²áÊ§°Ü
+    REGISTER_ERR,
 }SYSERRORCODE_E;
 
 /*----------------------------------------------*

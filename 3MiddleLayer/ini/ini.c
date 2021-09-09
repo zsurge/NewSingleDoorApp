@@ -30,7 +30,6 @@
 TEMPLATE_PARAM_STRU gtemplateParam;
 DEV_BASE_PARAM_STRU gDevBaseParam;
 RECORDINDEX_STRU gRecordIndex;
-PUBLICKEY_STRU gPublicKey;
 
 
 HEADINFO_STRU gSectorBuff[1024] = {0};
@@ -566,7 +565,7 @@ void initDevBaseParam(void)
         gDevBaseParam.deviceState.isDwLoadKey = DEVICE_DISABLE;
         gDevBaseParam.deviceState.isDwLoadSn = DEVICE_DISABLE;
         
-        gDevBaseParam.deviceCode.downLoadFlag.iFlag = STATIC_IP;  
+        gDevBaseParam.deviceCode.downLoadFlag.iFlag = DHCP_IP;  
         
         calcMac ( (unsigned char*)mac);
         bcd2asc ( (unsigned char*)asc, (unsigned char*)mac, 12, 0 );
@@ -594,6 +593,7 @@ void initDevBaseParam(void)
 //        gDevBaseParam.deviceCode.deviceSnLen = strlen ( temp );
         
         gDevBaseParam.deviceCode.deviceSnLen = strlen ( temp )-1 ;
+        memcpy ( gDevBaseParam.localIP.mac,temp,gDevBaseParam.deviceCode.deviceSnLen);
         memcpy ( gDevBaseParam.deviceCode.deviceSn,temp,gDevBaseParam.deviceCode.deviceSnLen);
         strcpy ( gDevBaseParam.mqttTopic.publish,DEV_FACTORY_PUBLISH );
         strcpy ( gDevBaseParam.mqttTopic.subscribe,DEV_FACTORY_SUBSCRIBE );
@@ -992,17 +992,6 @@ DOOR_TYPE getDoorType()
 }
 
 
-
-void ClearPubKey(void)
-{
-	memset(&gPublicKey,0x00,sizeof(PUBLICKEY_STRU)); 
-}
-
-
-uint8_t optPubKey(void *stParam,uint8_t mode,uint32_t len,uint32_t addr)
-{
-    return opParam(stParam,mode,len,addr); 
-}
 
 
 

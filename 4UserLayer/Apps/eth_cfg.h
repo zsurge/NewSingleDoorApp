@@ -32,8 +32,8 @@
 /*----------------------------------------------*
  * 宏定义                                       *
  *----------------------------------------------*/
-//#define   HOST_NAME       "192.168.110.79"     //服务器IP地址 测试专用 
-#define   HOST_NAME         "estate.bsgoal.net.cn"
+#define   HOST_NAME       "192.168.110.79"     //服务器IP地址 测试专用 
+//#define   HOST_NAME         "estate.bsgoal.net.cn"
 
 
 //#ifdef LWIP_DNS
@@ -50,6 +50,10 @@
 
 #define DEV_FACTORY_PUBLISH		"/smartCloud/production/msg/device"	
 #define DEV_FACTORY_SUBSCRIBE	"/smartCloud/production/msg/"    
+
+#define DEV_REG_PUBLISH		"/smartCloud/client/device/msg"	
+#define DEV_REG_SUBSCRIBE	"/smartCloud/client/msg/"
+
 
 
 

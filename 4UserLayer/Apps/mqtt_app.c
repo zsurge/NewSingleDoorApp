@@ -34,6 +34,8 @@
 
 static void ackUp ( void );
 static void upLoadMac(void);
+static void registerDevToHost(void);
+
 
 //static void showTask ( void );
 
@@ -252,17 +254,18 @@ log_d("2 gDevBaseParam.deviceCode.qrSn = %s,gDevBaseParam.deviceCode.qrSnLen = %
 				}
 
 				upLoadMac();
+				
 				break;
 			//订阅确认 订阅请求报文确认
 			case SUBACK://9
 				rc = MQTTDeserialize_suback ( &submsgid, 1, &subcount, &granted_qos, ( unsigned char* ) buf, buflen );	//有回执  QoS
-//				log_d ( "step = %d,granted qos is %d\r\n",SUBACK, granted_qos );         								//打印 Qos
+				log_d ( "step = %d,granted qos is %d\r\n",SUBACK, granted_qos );         								//打印 Qos
 				msgtypes = 0;
 				break;
 			//发布消息
 			case PUBLISH://3
 				rc = MQTTDeserialize_publish ( &dup, &qos, &retained, &msgid, &receivedTopic,&payload_in, &payloadlen_in, ( unsigned char* ) buf, buflen );	//读取服务器推送信息
-//				log_d ( "step = %d,message arrived : %s,len= %d\r\n",PUBLISH,payload_in,strlen ( ( const char* ) payload_in ) );
+				log_d ( "step = %d,message arrived : %s,len= %d\r\n",PUBLISH,payload_in,strlen ( ( const char* ) payload_in ) );
 
                 //消息质量不同，处理不同
                 if(qos == 0)
@@ -276,7 +279,7 @@ log_d("2 gDevBaseParam.deviceCode.qrSn = %s,gDevBaseParam.deviceCode.qrSnLen = %
                 //发送PUBACK消息
                 if(qos == 1)
                 {
-                    printf("publish qos is 1,send PUBACK \r\n");							//Qos为1，进行回执 响应
+                    log_d("publish qos is 1,send PUBACK \r\n");							//Qos为1，进行回执 响应
                     memset(buf,0,buflen);
                     len = MQTTSerialize_ack((unsigned char*)buf,buflen,PUBACK,dup,msgid);   
     				if ( len == 0 )
@@ -301,7 +304,7 @@ log_d("2 gDevBaseParam.deviceCode.qrSn = %s,gDevBaseParam.deviceCode.qrSnLen = %
                 //对于质量2,只需要发送PUBREC就可以了
                 if(qos == 2)
                 {
-                    printf("publish qos is 2,send PUBREC \r\n");
+                    log_d("publish qos is 2,send PUBREC \r\n");
                     len = MQTTSerialize_ack ((unsigned char*)buf,buflen, PUBREC, dup, msgid );
     				if ( len == 0 )
     				{
@@ -388,6 +391,10 @@ log_d("2 gDevBaseParam.deviceCode.qrSn = %s,gDevBaseParam.deviceCode.qrSnLen = %
 		memset ( buf,0,buflen );
 		rc=MQTTPacket_read ( ( unsigned char* ) buf, buflen, transport_getdata ); //轮询，读MQTT返回数据，
 //		log_d("MQTTPacket_read = %d,msgtypes = %d\r\n",rc,msgtypes);
+
+        //设备注册
+		registerDevToHost();
+		
 		if ( rc > 0 ) //如果有数据，进入相应状态。
 		{
 			msgtypes = rc;
@@ -443,6 +450,17 @@ static void upLoadMac(void)
         exec_proc("30004"," ");
     }
 }
+
+static void registerDevToHost(void)
+{
+    //log_d("gDevBaseParam.deviceState.isUpLoadMac = %x,gDevBaseParam.deviceState.isDwLoadKey=%x\r\n",gDevBaseParam.deviceState.isUpLoadMac,gDevBaseParam.deviceState.isDwLoadKey);
+    //还未上送MAC，待上送
+    if(gDevBaseParam.deviceState.isUpLoadMac == DEVICE_ENABLE && gDevBaseParam.deviceState.isDwLoadKey == DEVICE_DISABLE)
+    {
+        exec_proc("44444"," ");
+    }
+}
+
 
 
 //{\"data\":{\"currentLayer\":2,\"identification\":\"20-6-1582360859332\",\"purposeLayer\":9,\"status\":\"1\"},\"commandCode\":\"3010\",\"deviceCode\":\"5056E1CB67136EA3E1B0\"}

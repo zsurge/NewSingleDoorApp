@@ -156,6 +156,7 @@ void GetCardArray ( const uint8_t* jsonBuff,const uint8_t* item,uint8_t *num,uin
 //add 08.24
 uint8_t packetCard(uint8_t *cardID,uint8_t *descJson);
 
+uint8_t packetRegister(uint8_t *descJson);
 
 
 
