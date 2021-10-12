@@ -150,69 +150,7 @@ void CreateLedTask ( void )
 	              ( TaskHandle_t*  ) &xHandleTaskLed );
 }
 
-#if 0
-//LED任务函数
-static void vTaskLed ( void* pvParameters )
-{
-	int gUdpSock = -1;
-//	char recv_data[RECV_DATA] = {0};
-	struct sockaddr_in udp_addr,seraddr;
-	int recv_data_len;
-	socklen_t addrlen;
 
-	log_d ( "本地端口号是%d\r\n",LOCAL_PORT );
-
-	while ( 1 )
-	{
-
-		ulTaskNotifyTake ( pdTRUE,portMAX_DELAY );
-
-		gUdpSock = socket ( AF_INET, SOCK_DGRAM, 0 );
-		if ( gUdpSock < 0 )
-		{
-			log_d ( "Socket error\r\n" );
-			goto __exit;
-		}
-
-		udp_addr.sin_family = AF_INET;
-		udp_addr.sin_addr.s_addr = INADDR_ANY;
-		udp_addr.sin_port = htons ( LOCAL_PORT );
-		memset ( & ( udp_addr.sin_zero ), 0, sizeof ( udp_addr.sin_zero ) );
-
-		if ( bind ( gUdpSock, ( struct sockaddr* ) &udp_addr, sizeof ( struct sockaddr ) ) == -1 )
-		{
-			log_d ( "Unable to bind\r\n" );
-			goto __exit;
-		}
-
-		while ( 1 )
-		{
-			recv_data_len=recvfrom ( gUdpSock,recv_data,
-			                         RECV_DATA,0,
-			                         ( struct sockaddr* ) &seraddr,
-			                         &addrlen );
-
-			/*显示发送端的IP地址*/
-			log_d ( "receive from %s,addrlen =%d\r\n",inet_ntoa ( seraddr.sin_addr ),addrlen);
-
-			/*显示发送端发来的字串*/
-			dbh ( "udp recevce", recv_data, recv_data_len );
-
-			/*将字串返回给发送端*/
-			sendto ( gUdpSock,recv_data,
-			         recv_data_len,0,
-			         ( struct sockaddr* ) &seraddr,
-			         addrlen );
-		}
-
-	__exit:
-		if ( gUdpSock >= 0 )
-		{
-			closesocket ( gUdpSock );
-		}
-	}
-}
-#endif
 
 //LED任务函数
 static void vTaskLed ( void* pvParameters )

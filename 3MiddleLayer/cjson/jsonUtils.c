@@ -519,8 +519,6 @@ SYSERRORCODE_E getTimePacket(uint8_t *descBuf)
 //}
 
 
-
-
 uint8_t* packetBaseJson(uint8_t *jsonBuff,char status)
 {
     static uint8_t value[200] = {0};

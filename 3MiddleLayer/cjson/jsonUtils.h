@@ -138,8 +138,6 @@ SYSERRORCODE_E getTimePacket(uint8_t *descBuf);
 //响应模板下发打包函数
 uint8_t* packetRespTemplateJson(uint8_t *jsonBuff,char status);
 
-//响应添加卡号响应函数
-uint8_t* packetRespAddSingleCardJson(uint8_t *jsonBuff,char status);
 
 
 //心跳包

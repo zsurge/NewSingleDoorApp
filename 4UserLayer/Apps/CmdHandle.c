@@ -888,7 +888,7 @@ static SYSERRORCODE_E GetServerIp ( uint8_t* msgBuf )
 static SYSERRORCODE_E DownLoadCardID ( uint8_t* msgBuf )
 {
 	SYSERRORCODE_E result = NO_ERR;
-    uint8_t buf[256] = {0};
+    uint8_t buf[512] = {0};
     uint8_t tmpBcd[CARD_NO_BCD_LEN] = {0};   
     uint8_t tmpAsc[CARD_NO_LEN] = {0};
     uint8_t cardArray[20][8] = {0};
@@ -1279,6 +1279,8 @@ static SYSERRORCODE_E respRegisterDev(uint8_t *msgBuf)
     strcpy ( gDevBaseParam.mqttTopic.subscribe,DEVICE_SUBSCRIBE );    
     strcat ( gDevBaseParam.mqttTopic.subscribe,(const char*)gDevBaseParam.deviceCode.deviceSn);     
     optDevBaseParam(&gDevBaseParam,WRITE_PRARM,sizeof(DEV_BASE_PARAM_STRU),DEVICE_BASE_PARAM_ADDR);
+
+    NVIC_SystemReset(); 
 
     return result;
 }

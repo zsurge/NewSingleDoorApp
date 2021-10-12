@@ -563,16 +563,15 @@ void initDevBaseParam(void)
         gDevBaseParam.deviceState.isEnable = DEVICE_ENABLE;  
         gDevBaseParam.deviceState.isUpLoadMac = DEVICE_DISABLE;
         gDevBaseParam.deviceState.isDwLoadKey = DEVICE_DISABLE;
-        gDevBaseParam.deviceState.isDwLoadSn = DEVICE_DISABLE;
-        
-        gDevBaseParam.deviceCode.downLoadFlag.iFlag = DHCP_IP;  
+        gDevBaseParam.deviceState.isDwLoadSn = DEVICE_DISABLE;        
+
         
         calcMac ( (unsigned char*)mac);
         bcd2asc ( (unsigned char*)asc, (unsigned char*)mac, 12, 0 );
         Insertchar ( asc,temp,':' );
         
 
-        gDevBaseParam.localIP.ipMode.iMode = STATIC_IP;
+        gDevBaseParam.localIP.ipMode.iMode = DHCP_IP;
         
         gDevBaseParam.localIP.ip[0] = 192;
         gDevBaseParam.localIP.ip[1] = 168;
