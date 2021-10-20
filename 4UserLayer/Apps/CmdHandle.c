@@ -100,6 +100,9 @@ static SYSERRORCODE_E downPubKey( uint8_t* msgBuf );//平台下发三元组信息
 static SYSERRORCODE_E registerDev(uint8_t *msgBuf); //设备注册验证
 static SYSERRORCODE_E respRegisterDev(uint8_t *msgBuf); //设备注册验证响应
 
+static SYSERRORCODE_E idCheck( uint8_t* msgBuf );//身份证检验
+
+
 
 
 
@@ -130,7 +133,8 @@ const CMD_HANDLE_T CmdList[] =
     {"3002", GetServerIp},
     {"10001", GetTemplateParam},
     {"10004", DownLoadCardID},   
-    {"10031", RemoteOptDev},        
+    {"10031", RemoteOptDev},      
+    {"10075", idCheck}, 
     {"10003", ClearUserInof},   
     {"10002", EnableDev}, //同绑定
     {"88888", SetLocalTime},
@@ -1308,6 +1312,51 @@ static SYSERRORCODE_E respRegisterDev(uint8_t *msgBuf)
 //    mqttSendData(buf,len);  
 //}
 
+//身份证检验
+static SYSERRORCODE_E idCheck( uint8_t* msgBuf )
+{
+    SYSERRORCODE_E result = NO_ERR;
+    uint8_t buf[MQTT_TEMP_LEN] = {0};
+    uint8_t typeBuf[4] = {0};
+    uint16_t len = 0;
+    int type = 0;
 
+    READER_BUFF_STRU *ptReaderBuf = &gReaderMsg; 
+
+    if(!msgBuf)
+    {
+        return STR_EMPTY_ERR;
+    }        
+
+    //1.读取指令字
+    memset(typeBuf,0x00,sizeof(typeBuf));
+    strcpy((char *)typeBuf,(const char*)GetJsonItem((const uint8_t *)msgBuf,(const uint8_t *)"status",1));
+    type = atoi((const char*)typeBuf);
+    
+    if(type == 1)
+    {
+         ptReaderBuf->devID = READER2; 
+         ptReaderBuf->mode = REMOTE_OPEN_MODE;            
+     
+         /* 使用消息队列实现指针变量的传递 */
+         if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+                      (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+                      (TickType_t)10) != pdPASS )
+         {
+     //                xQueueReset(xCardIDQueue);删除该句，为了防止在下发数据的时候刷卡
+             log_d("send REMOTE_OPEN_MODE!\r\n"); 
+             //发送卡号失败蜂鸣器提示
+             //或者是队列满                
+         } 
+
+    }
+    else
+    {
+        return STR_EMPTY_ERR;
+    }    
+
+    return result;
+
+}
 
 

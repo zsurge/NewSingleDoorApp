@@ -144,6 +144,7 @@ uint8_t parseQrCode ( uint8_t* jsonBuff,LOCAL_USER_STRU* qrCodeInfo );
 uint8_t packetRespQr ( LOCAL_USER_STRU* localUserData,uint8_t* descJson );
 
 
+uint8_t packetId(uint8_t *id,uint8_t *descJson);
 
 
 

@@ -161,6 +161,11 @@ static void vTaskDataProcess ( void* pvParameters )
 
 				ret = readHead ( ptMsg->cardID, CARD_MODE );
 				log_d ( "readHead = %d\r\n",ret );	
+
+				if(DIP3 == 0)
+				{
+				    ret = 100; //测试模式，任意卡可以刷
+				}
 				
 				if ( ret != NO_FIND_HEAD )
 				{
@@ -233,24 +238,6 @@ static void vTaskDataProcess ( void* pvParameters )
 						}
 					}
 				}
-				else
-				{
-					log_d ( "read card error: not find card\r\n" );
-                    //if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
-                    if(DIP3 == 0)
-					{
-                        devID = ptMsg->devID;
-                        gOpenDoorTimer.flag = 1;
-                        gOpenDoorTimer.outTimer = 12000;
-                        gOpenDoor2Timer.flag = 1;
-                        gOpenDoor2Timer.outTimer = 12000;                        
-					
-						devReturn = xQueueSend ( xCmdQueue,           /* 消息队列句柄 */
-						                         ( void* ) &devID,            /* 发送结构体指针变量ptReader的地址 */
-						                         ( TickType_t ) 30 );					    
-//					    getCard(ptMsg->cardID);
-					}					
-				}
 		    break;
 		    
 		    //远程开门
@@ -290,33 +277,19 @@ static void vTaskDataProcess ( void* pvParameters )
                                              ( void* ) &devID,            /* 发送结构体指针变量ptReader的地址 */
                                              ( TickType_t ) 30 );
 				}
-				else if ( DIP3 == 0 )
-				//else if(gDevBaseParam.progamMode == PROGRAMMODE_TEST)
-				{
-					devID = 1;
-                    gOpenDoorTimer.flag = 1;
-                    gOpenDoorTimer.outTimer = 12000;
-                    gOpenDoor2Timer.flag = 1;
-                    gOpenDoor2Timer.outTimer = 12000;  
-
-					devReturn = xQueueSend ( xCmdQueue,                 /* 消息队列句柄 */
-					                         ( void* ) &devID,             /* 发送结构体指针变量ptReader的地址 */
-					                         ( TickType_t ) 30 );				
-				}
-
-				if ( devReturn != pdPASS )
-				{
-					xQueueReset ( xCmdQueue );
-					log_d ( "send card2  queue is error!\r\n" );
-					//发送卡号失败蜂鸣器提示
-					//或者是队列满
-				}
 			break;
 			case AUTH_MODE_QR:						    
 			    ret = parseQrCode(ptMsg->cardID,&localUserData);
-                if(ret == NO_ERR)
+
+			    if(DIP3 == 0)
+				{
+				    ret = NO_ERR; //测试模式，任意卡可以刷
+				}
+				
+                if(ret != NO_ERR)
                 {
-                    log_d("not find record\r\n");                    
+                    log_d("not find record\r\n");     
+                    break;
                 }
 
 				devID = ptMsg->devID;
@@ -347,6 +320,17 @@ static void vTaskDataProcess ( void* pvParameters )
                 log_d("send = %d\r\n",len);  
                 
 			break;
+		   case AUTH_MODE_ID:
+                log_d ( "AUTH_MODE_ID %02x,%02x,%02x,%02x,devid = %d\r\n",ptMsg->cardID[0],ptMsg->cardID[1],ptMsg->cardID[2],ptMsg->cardID[3],ptMsg->devID );
+                //打包数据
+                packetId ( ptMsg->cardID, jsonbuff );
+                
+                //发送数据到MQTT服务器
+                len = strlen ( ( const char* ) jsonbuff );                
+                len = mqttSendData ( jsonbuff,len );                
+                log_d ( "send = %d,buff = %s\r\n",len,jsonbuff );
+
+		        break;
 		}
 
 

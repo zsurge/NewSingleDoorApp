@@ -47,6 +47,8 @@
 //ЖўЮЌТы
 #define AUTH_MODE_QR        7
 
+
+
 #define QR_MAX_BUF_LEN   512
 
 

@@ -61,6 +61,10 @@
 //二维码
 #define AUTH_MODE_QR        7
 
+//身份证
+#define AUTH_MODE_ID        11
+
+
 
     
 //事件标志
