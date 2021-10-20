@@ -126,7 +126,7 @@ static void AppTaskCreate (void)
     }
 
     //Î¤¸ù¶Á¿¨Æ÷
-    CreateReaderTask();         //0   1    
+    //CreateReaderTask();         //0   1    
 
     //RS485¶Á¿¨Æ÷
     CreateRs485ReaderTask();     // 2 1    

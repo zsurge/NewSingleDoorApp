@@ -58,6 +58,10 @@
 #define DEL_CARD_MODE 4
 #define MANUAL_SORT     (10)
 
+//二维码
+#define AUTH_MODE_QR        7
+
+
     
 //事件标志
 #define TASK_BIT_0	 (1 << 0)
@@ -67,7 +71,7 @@
 #define TASK_BIT_4	 (1 << 4)
 #define TASK_BIT_5	 (1 << 5)   
     
-#define TASK_BIT_ALL ( TASK_BIT_0 | TASK_BIT_1| TASK_BIT_2)
+#define TASK_BIT_ALL (  TASK_BIT_1| TASK_BIT_2)
 
 /*----------------------------------------------*
  * 常量定义                                     *

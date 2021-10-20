@@ -56,7 +56,9 @@ s32 transport_open(s8* servip, s32 port)
 
     *sock = socket(AF_INET, SOCK_STREAM, 0);
     if(*sock < 0)
+    {
         printf("[ERROR] Create socket failed\n");
+    }        
 
     server = gethostbyname(servip);
     if(server == NULL)

@@ -25,6 +25,7 @@
 
 #include "jsonUtils.h"
 #include "eth_cfg.h"
+#include "calcDevNO.h"
 
 
 
@@ -1100,5 +1101,205 @@ uint8_t packetRegister(uint8_t *descJson)
 }
 
 
+uint8_t parseQrCode ( uint8_t* jsonBuff,LOCAL_USER_STRU* qrCodeInfo )
+{
+	cJSON* root=NULL,*tmpArray=NULL;
+	uint8_t buf[300] = {0};
+	uint8_t isFind = 0;
+	uint32_t endTime = 0;
+	uint8_t key[16] = { 0x82,0x5d,0x82,0xd8,0xd5,0x2f,0xdf,0x85,0x28,0xa2,0xb5,0xd8,0x88,0x88,0x88,0x88 };
+	uint8_t bcd[17] = {0};
+	uint8_t floorLen = 0;
+	uint8_t i = 0;
+
+	if ( !jsonBuff )
+	{
+		cJSON_Delete ( root );
+		log_d ( "error json data\r\n" );
+		return STR_EMPTY_ERR;
+	}
+
+	root = cJSON_Parse ( ( char* ) jsonBuff ); //解析数据包
+	if ( !root )
+	{
+		cJSON_Delete ( root );
+		log_d ( "Error before: [%s]\r\n",cJSON_GetErrorPtr() );
+		return CJSON_PARSE_ERR;
+	}
+
+	tmpArray = cJSON_GetObjectItem ( root, "qS" );
+	if ( tmpArray )
+	{
+		strcpy ( ( char* ) qrCodeInfo->startTime,tmpArray->valuestring );
+		log_d ( "qrCodeInfo->startTime= %s\r\n",qrCodeInfo->startTime );
+
+		endTime = atoi ( qrCodeInfo->startTime ) + 60;
+		sprintf ( ( char* ) qrCodeInfo->endTime,"%d",endTime );
+	}
+	
+	tmpArray = NULL;
+	tmpArray = cJSON_GetObjectItem ( root, "i" );
+
+	if ( tmpArray )
+	{
+		log_d ( "user id = %s,len = %d\r\n",tmpArray->valuestring,strlen ( ( const char* ) tmpArray->valuestring ) );
+
+		asc2bcd ( bcd, ( uint8_t* ) tmpArray->valuestring, strlen ( ( const char* ) tmpArray->valuestring ), 1 );
+
+		Des3_2 ( key, bcd, strlen ( ( const char* ) tmpArray->valuestring ) /2, qrCodeInfo->userId, 1 );
+
+		log_d ( "qrCodeInfo->qrID= %s,value = %d\r\n",qrCodeInfo->userId,atoi ( qrCodeInfo->userId ) );
+	}
+
+
+	//获取用户类型2021.01.09
+	tmpArray = NULL;
+	tmpArray = cJSON_GetObjectItem ( root, "ownerType" );
+	if ( tmpArray )
+	{
+	    qrCodeInfo->ownerType = tmpArray->valueint;
+	}
+
+	memset ( buf,0x00,sizeof ( buf ) );
+	tmpArray = NULL;
+	tmpArray = cJSON_GetObjectItem ( root, "d1" );
+	if ( tmpArray )
+	{
+		strcpy ( ( char* ) buf,tmpArray->valuestring );
+		if ( strlen ( ( const char* ) buf ) > 0 )
+		{
+			log_d ( "d1 = %s\r\n",buf );
+			if ( findDev ( buf,1 ) == 1 )
+			{
+				isFind =1;
+				goto QR_END;
+			}
+		}
+	}
+
+	memset ( buf,0x00,sizeof ( buf ) );
+	tmpArray = NULL;
+	tmpArray = cJSON_GetObjectItem ( root, "d2" );
+	if ( tmpArray )
+	{
+		strcpy ( ( char* ) buf,tmpArray->valuestring );
+		if ( strlen ( ( const char* ) buf ) > 0 )
+		{
+			log_d ( "d2 = %s\r\n",buf );
+			if ( findDev ( buf,2 ) == 1 )
+			{
+				isFind =1;
+				goto QR_END;
+			}
+		}
+	}
+
+	memset ( buf,0x00,sizeof ( buf ) );
+	tmpArray = NULL;
+	tmpArray = cJSON_GetObjectItem ( root, "d3" );
+	if ( tmpArray )
+	{
+		strcpy ( ( char* ) buf,tmpArray->valuestring );
+		if ( strlen ( ( const char* ) buf ) > 0 )
+		{
+			log_d ( "d3= %s\r\n",buf );
+			if ( findDev ( buf,3 ) == 1 )
+			{
+				isFind =1;
+				goto QR_END;
+			}
+		}
+	}
+
+
+	memset ( buf,0x00,sizeof ( buf ) );
+	tmpArray = NULL;
+	tmpArray = cJSON_GetObjectItem ( root, "d4" );
+	if ( tmpArray )
+	{
+		strcpy ( ( char* ) buf,tmpArray->valuestring );
+		if ( strlen ( ( const char* ) buf ) > 0 )
+		{
+			log_d ( "d4 = %s\r\n",buf );
+			if ( findDev ( buf,4 ) == 1 )
+			{
+				isFind =1;
+				goto QR_END;
+			}
+		}
+	}
+
+	memset ( buf,0x00,sizeof ( buf ) );
+	tmpArray = NULL;
+	tmpArray = cJSON_GetObjectItem ( root, "d5" );
+	if ( tmpArray )
+	{
+		strcpy ( ( char* ) buf,tmpArray->valuestring );
+		if ( strlen ( ( const char* ) buf ) > 0 )
+		{
+			log_d ( "d5 = %s\r\n",buf );
+			if ( findDev ( buf,5 ) == 1 )
+			{
+				isFind =1;
+			}
+		}
+	}
+
+QR_END:
+	cJSON_Delete ( root );
+
+	return isFind;
+
+}
+
+
+uint8_t packetRespQr ( LOCAL_USER_STRU* localUserData,uint8_t* descJson )
+{
+
+	SYSERRORCODE_E result = NO_ERR;
+	cJSON* root;
+	char* tmpBuf;
+	char tmpTime[32] = {0};
+
+	root = cJSON_CreateObject();
+
+	if ( !root )
+	{
+		log_d ( "Error before: [%s]\r\n",cJSON_GetErrorPtr() );
+		cJSON_Delete ( root );
+		my_free ( tmpBuf );
+		return CJSON_CREATE_ERR;
+	}
+
+	cJSON_AddStringToObject ( root, "deviceCode", gDevBaseParam.deviceCode.deviceSn );
+	log_d ( "deviceCode = %s\r\n",gDevBaseParam.deviceCode.deviceSn );
+
+
+	cJSON_AddStringToObject ( root, "commandCode","10012" );
+    cJSON_AddNumberToObject ( root, "callType",localUserData->authMode );
+	cJSON_AddNumberToObject ( root, "ownerType",localUserData->ownerType );
+	cJSON_AddNumberToObject ( root, "status", ON_LINE );
+	cJSON_AddNumberToObject ( root, "ownerId", atoi(localUserData->userId) );
+	strcpy ( tmpTime, ( const char* ) bsp_ds1302_readtime() );
+	log_d("tmpTime = %s\r\n",tmpTime);
+	cJSON_AddStringToObject ( root, "callElevatorTime",tmpTime );
+	cJSON_AddStringToObject ( root, "timeStamp", ( const char* ) localUserData->startTime );
+
+	tmpBuf = cJSON_PrintUnformatted ( root );
+	
+	if ( !tmpBuf )
+	{
+		log_d ( "cJSON_PrintUnformatted error \r\n" );
+		cJSON_Delete ( root );
+		my_free ( tmpBuf );
+		return CJSON_FORMAT_ERR;
+	}
+
+	strcpy ( ( char* ) descJson,tmpBuf );
+	cJSON_Delete ( root );
+	my_free ( tmpBuf );
+	return result;
+
+}
 
 

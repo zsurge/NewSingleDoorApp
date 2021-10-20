@@ -53,7 +53,7 @@ const char *rS485ReaderTaskName = "vRS485ReadTask";
 
 typedef struct FROMREADER
 {
-    uint8_t rxBuff[32];               //接收字节数    
+    uint8_t rxBuff[512];               //接收字节数    
     uint8_t rxStatus;                   //接收状态
     uint16_t rxCnt;                     //接收字节数
 }FROMREADER_STRU;
@@ -111,7 +111,7 @@ static void reverseArray(uint8_t *array)
 
 static void vTaskRs485Reader(void *pvParameters)
 { 
-        uint8_t sendBuff[32] = {0};
+        uint8_t sendBuff[512] = {0};
         uint16_t len = 0; 
         uint8_t tmpValue;
         CARD_TYPE cardDev1,cardDev2;
@@ -129,11 +129,10 @@ static void vTaskRs485Reader(void *pvParameters)
                 
                 memset(&gReaderData,0x00,sizeof(FROMREADER_STRU));
 
-                log_d("recv buff = %s,len = %d\r\n",sendBuff,len);
+                log_d("1 recv buff = %s,len = %d\r\n",sendBuff,len);
                 
                 if(len == 8)
-                {    
-
+                { 
                     memcpy(sendBuff,"00",2);
                     sscanf((const char*)sendBuff,"%8x",&tmpID);
 
@@ -164,9 +163,35 @@ static void vTaskRs485Reader(void *pvParameters)
                       //发送卡号失败蜂鸣器提示
                       //或者是队列满                
                     }
+                }                
+                else
+                {                    
+                    /* 清零 */
+                    ptReaderBuf->devID = 0; 
+                    ptReaderBuf->mode = 0;
+                    memset(ptReaderBuf->cardID,0x00,sizeof(ptReaderBuf->cardID));  
+                    Sound2(50);
+
+                    ptReaderBuf->devID = READER1; 
+                    ptReaderBuf->mode = AUTH_MODE_QR;
+                    memcpy(ptReaderBuf->cardID,sendBuff,len);   
+
+
+                    /* 使用消息队列实现指针变量的传递 */
+                    if(xQueueSend(xCardIDQueue,             /* 消息队列句柄 */
+                               (void *) &ptReaderBuf,             /* 发送结构体指针变量ptReader的地址 */
+                               (TickType_t)10) != pdPASS )
+                    {
+                    //                xQueueReset(xCardIDQueue); 删除该句，为了防止在下发数据的时候刷卡
+                      log_d("send card1  queue is error!\r\n"); 
+                      //发送卡号失败蜂鸣器提示
+                      //或者是队列满                
+                    }                    
                 }
             }
 
+            
+            //身份证
             memset(sendBuff,0x00,sizeof(sendBuff));            
             if(parseReader(COM2) == FINISHED)
             {
@@ -174,7 +199,7 @@ static void vTaskRs485Reader(void *pvParameters)
                 
                 memset(&gReaderData,0x00,sizeof(FROMREADER_STRU));
 
-                log_d("recv buff = %s,len = %d\r\n",sendBuff,len);
+                log_d("2 recv buff = %s,len = %d\r\n",sendBuff,len);
                 
                 if(len == 8)
                 {    
@@ -183,7 +208,7 @@ static void vTaskRs485Reader(void *pvParameters)
                     sscanf((const char*)sendBuff,"%8x",&tmpID);
 
                     
-                    log_d("sendBuff = %s\r\n",sendBuff);
+                    log_d("sendBuff = %s,tmpID = %d\r\n",sendBuff,tmpID);
                     
                     /* 清零 */
                     ptReaderBuf->devID = 0; 
@@ -238,7 +263,7 @@ static uint8_t parseReader(COM_PORT_E port)
 //        log_d("ch = %c,gReaderData.rxBuff = %c \r\n",ch,gReaderData.rxBuff[gReaderData.rxCnt-1]);
          
         //最后一个字节为回车，或者总长度为510后，结束读取
-        if(gReaderData.rxBuff[gReaderData.rxCnt-1] == 0x0A || gReaderData.rxCnt >=32)
+        if(gReaderData.rxBuff[gReaderData.rxCnt-1] == 0x0A || gReaderData.rxCnt >=510)
         {   
             
            if(gReaderData.rxBuff[gReaderData.rxCnt-1] == 0x0A)
@@ -269,9 +294,9 @@ static uint16_t parseCardId(char *src,char *cardId,uint8_t *mode)
     }
     
     //去掉0D0A
-    if(strlen(src)-2 >QUEUE_BUF_LEN)
+    if(strlen(src)-2 >QR_MAX_BUF_LEN)
     {
-        srcLen = QUEUE_BUF_LEN;
+        srcLen = QR_MAX_BUF_LEN;
     }
     else
     {

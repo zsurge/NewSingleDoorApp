@@ -75,33 +75,14 @@
  * 模块级变量                                   *
  *----------------------------------------------*/
 //#pragma pack(1)
-//typedef struct
-//{
-//    uint8_t authMode;                               //鉴权模式,刷卡=2；QR=7
-//    uint8_t defaultFloor;                           //默认楼层
-//    uint8_t qrType;                                 //QR类型 1 2 3 4
-//    uint8_t qrID[QRID_LEN+1];                         //QRID
-//    uint8_t userId[USER_ID_LEN+1];                  //用户ID
-//    uint8_t cardNo[CARD_NO_LEN+1];                  //卡号
-//    char accessFloor[FLOOR_ARRAY_LEN+1];           //权限楼层
-//    uint8_t startTime[TIME_LEN+1];                    //开始有效时间
-//    uint8_t endTime[TIME_LEN+1];                      //结束时间    
-//    uint8_t qrStarttimeStamp[TIMESTAMP_LEN+1];             //二维码开始时间戳  
-//    uint8_t qrEndtimeStamp[TIMESTAMP_LEN+1];               //二维码结束时间戳
-//    uint8_t timeStamp[TIMESTAMP_LEN+1];                    //二维码时间戳
-//}LOCAL_USER_STRU;
-
-
-//typedef struct 
-//{    
-//    uint8_t type;                                   //二维码类型
-//    uint8_t defaultFloor;                           //默认楼层    
-//    uint8_t qrID[QRID_LEN+1];                         //QRID
-//    uint8_t startTime[TIME_LEN+1];                    //开始有效时间
-//    uint8_t endTime[TIME_LEN+1];                      //结束时间 
-//    char accessFloor[FLOOR_ARRAY_LEN+1];           //权限楼层
-//}QRCODE_INFO_STRU;
-
+typedef struct
+{
+    uint8_t authMode;                               //鉴权模式
+    uint8_t ownerType;                                 //QR类型 1 2 3 4
+    uint8_t userId[USER_ID_LEN+1];                  //用户ID
+    uint8_t startTime[TIME_LEN+1];                    //开始有效时间
+    uint8_t endTime[TIME_LEN+1];                      //结束时间 
+}LOCAL_USER_STRU;
 //#pragma pack()
 
 //extern LOCAL_USER_STRU gLoalUserData;
@@ -155,6 +136,14 @@ void GetCardArray ( const uint8_t* jsonBuff,const uint8_t* item,uint8_t *num,uin
 uint8_t packetCard(uint8_t *cardID,uint8_t *descJson);
 
 uint8_t packetRegister(uint8_t *descJson);
+
+
+//add 1019
+uint8_t parseQrCode ( uint8_t* jsonBuff,LOCAL_USER_STRU* qrCodeInfo );
+
+uint8_t packetRespQr ( LOCAL_USER_STRU* localUserData,uint8_t* descJson );
+
+
 
 
 

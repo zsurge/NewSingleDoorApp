@@ -84,6 +84,7 @@ static void vTaskDataProcess ( void* pvParameters )
 	uint8_t jsonbuff[256] = {0};
 	uint32_t devID = 0;
 	READER_BUFF_STRU* ptMsg  = &gReaderRecvMsg;
+	LOCAL_USER_STRU localUserData ;
 
 	uint8_t openLeft[8] = { 0x02,0x00,0x07,0x01,0x06,0x4c,0x03,0x4D };
 	uint8_t openRight[8] = { 0x02,0x00,0x07,0x01,0x06,0x52,0x03,0x53 };
@@ -127,27 +128,23 @@ static void vTaskDataProcess ( void* pvParameters )
 
 			//消息接收成功，发送接收到的消息
 			log_d ( "cardid %02x,%02x,%02x,%02x,devid = %d,mode = %d\r\n",ptMsg->cardID[0],ptMsg->cardID[1],ptMsg->cardID[2],ptMsg->cardID[3],ptMsg->devID,ptMsg->mode );
+            log_d ("xQueueReceive = %s\r\n",ptMsg->cardID);;
 
-			log_d ( "======vTaskDataProcess mem perused = %3d%======\r\n",mem_perused ( SRAMIN ) );
-
-			//排序
-			if ( ptMsg->mode == SORT_CARD_MODE )
-			{
-				//这里进行整页排序
+        switch(ptMsg->mode)
+        {
+            case SORT_CARD_MODE:
+			//排序			
 #ifdef SORT_FLAG
 				sortPageCard();
 #endif
-
-			}
-			else if ( ptMsg->mode == MANUAL_SORT )
-			{
+            break;
+			case MANUAL_SORT:
 				//针对所有数据进行排序
 #ifdef SORT_FLAG
 				manualSortCard();
 #endif
-			}
-			else if ( ptMsg->mode == DEL_CARD_MODE )
-			{
+            break;
+			case DEL_CARD_MODE:		
 				ret = delHead ( ptMsg->cardID,CARD_MODE );
 				log_d ( "delHead = %d\r\n",ret );
 
@@ -156,10 +153,9 @@ static void vTaskDataProcess ( void* pvParameters )
 					//1.删除用户失败
 
 				}
-			}
-			else if ( ptMsg->mode == READMODE ) //读卡
-			{
-
+			break;
+			 //读卡
+			case READMODE:	
 				//memcpy(ptMsg->cardID,"\x00\xfb\x4b\xfb",4);
 				log_d ( "test cardid %02x,%02x,%02x,%02x\r\n",ptMsg->cardID[0],ptMsg->cardID[1],ptMsg->cardID[2],ptMsg->cardID[3]);
 
@@ -255,9 +251,11 @@ static void vTaskDataProcess ( void* pvParameters )
 //					    getCard(ptMsg->cardID);
 					}					
 				}
-			}
-			else if ( ptMsg->mode == REMOTE_OPEN_MODE ) //远程开门
-			{
+		    break;
+		    
+		    //远程开门
+			case REMOTE_OPEN_MODE:
+			
 				//发送开门指令
 
 				log_d ( "read card success\r\n" );
@@ -313,9 +311,43 @@ static void vTaskDataProcess ( void* pvParameters )
 					//发送卡号失败蜂鸣器提示
 					//或者是队列满
 				}
-			}//END ELSE IF
-		
+			break;
+			case AUTH_MODE_QR:						    
+			    ret = parseQrCode(ptMsg->cardID,&localUserData);
+                if(ret == NO_ERR)
+                {
+                    log_d("not find record\r\n");                    
+                }
 
+				devID = ptMsg->devID;
+
+				if ( devID == READER1 )
+				{
+					gOpenDoorTimer.flag = 1;
+					gOpenDoorTimer.outTimer = 12000;
+				}
+				else if ( devID == READER2 )
+				{
+					gOpenDoor2Timer.flag = 1;
+					gOpenDoor2Timer.outTimer = 12000;
+				}
+
+				devReturn = xQueueSend ( xCmdQueue,           /* 消息队列句柄 */
+				                         ( void* ) &devID,            /* 发送结构体指针变量ptReader的地址 */
+				                         ( TickType_t ) 30 );                
+
+                localUserData.authMode = ptMsg->mode;               
+                
+                //1.打包
+                packetRespQr(&localUserData,jsonbuff); 
+                len = strlen((const char*)jsonbuff);
+                
+                //2.发给服务器
+                len = mqttSendData(jsonbuff,len);
+                log_d("send = %d\r\n",len);  
+                
+			break;
+		}
 
 
 		/* 发送事件标志，表示任务正常运行 */
